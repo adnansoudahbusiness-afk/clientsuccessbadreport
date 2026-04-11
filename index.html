@@ -467,8 +467,6 @@
 // CONFIG
 // ═══════════════════════════════════════════
 const CONFIG = {
-  USERNAME: "threeup",
-  PASSWORD: "cao2026",
   THREEUP_API_KEY: "pit-a5b6ba64-25d8-41c2-a472-0e5a083ae283",
   APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwCZqPogEnq8x8Hq83iZggKUT8Knwm6cK5GF0hppdwwhc3bHRHQqsr_2mfxaeR1Xo7p/exec",
   COUNTER_FIELD_ID: "nNx5vev4O2dBgLbqYNSh",
@@ -508,10 +506,16 @@ const GHL_BASE = "https://services.leadconnectorhq.com";
 // ═══════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════
+const USERS = {
+  "threeup": "cao2026",
+  "hamzeh":  "hamzeh2026",
+  "laith":   "laith2026"
+};
+
 function doLogin() {
   const u = document.getElementById('login-user').value.trim();
   const p = document.getElementById('login-pass').value;
-  if (u === CONFIG.USERNAME && p === CONFIG.PASSWORD) {
+  if (USERS[u] && USERS[u] === p) {
     sessionStorage.setItem('cao_auth', '1');
     showDashboard();
   } else {
