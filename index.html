@@ -391,6 +391,12 @@
   <!-- TAB 1: Weekly Reviews Input -->
   <div id="tab-input" class="tab-content active">
     <h2>Weekly Reviews Input</h2>
+    <div class="filters-row" style="margin-bottom:16px">
+      <div class="filter-group">
+        <label>Select Week</label>
+        <select class="filter-select" id="tab1-week-select" onchange="onTab1WeekChange()"></select>
+      </div>
+    </div>
     <div class="week-label">Week: <span id="week-display"></span></div>
     <div class="table-wrap">
       <table id="reviews-table">
@@ -597,10 +603,43 @@ function initDashboard() {
 // ═══════════════════════════════════════════
 // TAB 1 — Weekly Reviews Input
 // ═══════════════════════════════════════════
+
+// Hardcoded historical weeks + current auto-calculated week
+function buildTab1Weeks() {
+  const hardcoded = [
+    { label: "Week 1 — Sat 21/3 \u2013 Thu 26/3", week: "Sat 21/3 \u2013 Thu 26/3" },
+    { label: "Week 2 — Sat 28/3 \u2013 Thu 2/4",  week: "Sat 28/3 \u2013 Thu 2/4"  },
+    { label: "Week 3 — Sat 4/4 \u2013 Thu 9/4",   week: "Sat 4/4 \u2013 Thu 9/4"   },
+  ];
+
+  // Current week = most recent completed Sat-Thu window
+  const current = getWeekBounds();
+  const curShort = `Sat ${fmtDate(current.start, true)} \u2013 Thu ${fmtDate(current.end, true)}`;
+
+  // Avoid duplicating if current matches a hardcoded week
+  const isDup = hardcoded.some(h => h.week === curShort);
+  const currentEntry = { label: `Current Week \u2014 ${curShort}`, week: curShort, isCurrent: true };
+
+  return isDup
+    ? [...hardcoded.map(h => h.week === curShort ? { ...h, label: `Current Week \u2014 ${h.week}`, isCurrent: true } : h)]
+    : [...hardcoded, currentEntry];
+}
+
 function initTab1() {
-  const week = getWeekBounds();
-  document.getElementById('week-display').textContent =
-    `${fmtDate(week.start)} — ${fmtDate(week.end)}`;
+  const weeks = buildTab1Weeks();
+  const sel = document.getElementById('tab1-week-select');
+  sel.innerHTML = '';
+  weeks.forEach((w, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = w.label;
+    if (w.isCurrent) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Set display to selected week
+  const selected = weeks.find(w => w.isCurrent) || weeks[weeks.length - 1];
+  document.getElementById('week-display').textContent = selected.week;
 
   const tbody = document.getElementById('reviews-tbody');
   tbody.innerHTML = '';
@@ -616,6 +655,18 @@ function initTab1() {
   });
 }
 
+function onTab1WeekChange() {
+  const weeks = buildTab1Weeks();
+  const idx = parseInt(document.getElementById('tab1-week-select').value, 10);
+  document.getElementById('week-display').textContent = weeks[idx].week;
+}
+
+function getSelectedWeekLabel() {
+  const weeks = buildTab1Weeks();
+  const idx = parseInt(document.getElementById('tab1-week-select').value, 10);
+  return weeks[idx].week;
+}
+
 async function submitAllReviews() {
   if (!CONFIG.APPS_SCRIPT_URL) {
     alert('Please configure APPS_SCRIPT_URL in the CONFIG section at the top of this file.');
@@ -627,13 +678,14 @@ async function submitAllReviews() {
   btn.textContent = 'Submitting...';
   summary.textContent = '';
 
+  const weekLabel = getSelectedWeekLabel();
   let ok = 0, total = 0;
   const promises = CONFIG.CLIENTS.map(async (client, i) => {
     const input = document.getElementById(`rev-${i}`);
     const val = parseInt(input.value, 10);
     if (!val || val <= 0) return;
     if (client.sheet_id === 'SHEET_ID') {
-      document.getElementById(`rev-status-${i}`).textContent = '⚠️';
+      document.getElementById(`rev-status-${i}`).textContent = '\u26a0\ufe0f';
       return;
     }
     total++;
@@ -642,14 +694,15 @@ async function submitAllReviews() {
     try {
       const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
         method: 'POST',
-        body: JSON.stringify({ sheet_id: client.sheet_id, value: val }),
+        // Payload: {sheet_id, value, week: "Sat 21/3 – Thu 26/3"}
+        body: JSON.stringify({ sheet_id: client.sheet_id, value: val, week: weekLabel }),
         headers: { 'Content-Type': 'application/json' }
       });
       const data = await resp.json();
-      if (data.success) { ok++; statusEl.textContent = '✅'; }
-      else { statusEl.textContent = '❌'; }
+      if (data.success) { ok++; statusEl.textContent = '\u2705'; }
+      else { statusEl.textContent = '\u274c'; }
     } catch {
-      statusEl.textContent = '❌';
+      statusEl.textContent = '\u274c';
     }
   });
 
