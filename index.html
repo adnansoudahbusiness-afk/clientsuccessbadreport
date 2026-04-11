@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThreeUp CAO Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a1628;
+      --bg2:      #111d35;
+      --bg3:      #1a2a45;
+      --border:   #1e3050;
+      --blue:     #4f8ef7;
+      --blue-dk:  #3a72d8;
+      --green:    #22c55e;
+      --red:      #ef4444;
+      --orange:   #f97316;
+      --yellow:   #eab308;
+      --text:     #e8eef8;
+      --muted:    #7a90b0;
+      --radius:   10px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── LOGIN ── */
+    #login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .login-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .login-logo {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--blue);
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+    .login-sub {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 36px;
+    }
+    .login-box input {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 15px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .login-box input:focus { border-color: var(--blue); }
+    .login-box input::placeholder { color: var(--muted); }
+    .btn-login {
+      width: 100%;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 13px;
+      cursor: pointer;
+      transition: background .2s;
+      margin-top: 4px;
+    }
+    .btn-login:hover { background: var(--blue-dk); }
+    .login-error {
+      color: var(--red);
+      font-size: 13px;
+      margin-top: 12px;
+      min-height: 20px;
+    }
+
+    /* ── DASHBOARD ── */
+    #dashboard { display: none; flex-direction: column; min-height: 100vh; }
+
+    /* NAV */
+    .nav {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      height: 56px;
+      gap: 8px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-brand {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--blue);
+      margin-right: 16px;
+      white-space: nowrap;
+    }
+    .nav-tabs { display: flex; gap: 4px; flex: 1; }
+    .nav-tab {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      white-space: nowrap;
+    }
+    .nav-tab:hover { background: var(--bg3); color: var(--text); }
+    .nav-tab.active { background: var(--blue); color: #fff; }
+    .btn-logout {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color .2s, color .2s;
+      white-space: nowrap;
+    }
+    .btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+    /* TAB CONTENT */
+    .tab-content { display: none; padding: 28px 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .tab-content.active { display: block; }
+
+    /* COMMON */
+    h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+    .week-label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+    .week-label span { color: var(--blue); font-weight: 500; }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead th {
+      background: var(--bg3);
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg3); }
+    tbody td { padding: 11px 16px; vertical-align: middle; }
+    td.num { color: var(--muted); font-size: 13px; width: 40px; }
+
+    /* INPUT */
+    input[type="number"].review-input {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 7px 10px;
+      width: 90px;
+      outline: none;
+      transition: border-color .2s;
+      -moz-appearance: textfield;
+    }
+    input[type="number"].review-input::-webkit-inner-spin-button,
+    input[type="number"].review-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type="number"].review-input:focus { border-color: var(--blue); }
+
+    /* STATUS BADGE */
+    .status-cell { font-size: 18px; text-align: center; }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: opacity .2s, background .2s;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-green { background: var(--green); color: #fff; }
+    .btn-green:hover:not(:disabled) { background: #16a34a; }
+    .btn-blue { background: var(--blue); color: #fff; }
+    .btn-blue:hover:not(:disabled) { background: var(--blue-dk); }
+    .btn-ghost {
+      background: var(--bg3);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+
+    .actions-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .summary-msg { font-size: 14px; color: var(--muted); }
+    .summary-msg.ok { color: var(--green); }
+    .summary-msg.err { color: var(--red); }
+
+    /* NOTES TAB */
+    .filters-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 6px; }
+    .filter-group label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+    select.filter-select, select.filter-select-sm {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 9px 12px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+    select.filter-select { min-width: 220px; }
+    select.filter-select-sm { min-width: 200px; }
+    select.filter-select:focus, select.filter-select-sm:focus { border-color: var(--blue); }
+
+    .note-preview { color: var(--muted); font-size: 13px; max-width: 340px; }
+    .note-expand-btn {
+      background: none;
+      border: none;
+      color: var(--blue);
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 0;
+      white-space: nowrap;
+    }
+    .note-full {
+      display: none;
+      margin-top: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text);
+      max-width: 500px;
+    }
+
+    /* SPINNER */
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-row td { color: var(--muted); text-align: center; padding: 32px; }
+
+    /* CLIENT STATUS GRID */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+    @media (max-width: 900px) { .status-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .status-grid { grid-template-columns: 1fr; } }
+
+    .client-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      transition: border-color .2s;
+    }
+    .client-card:hover { border-color: var(--blue); }
+    .card-name {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      line-height: 1.3;
+      min-height: 36px;
+    }
+    .card-counter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .card-counter-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .card-last-note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .card-loading { color: var(--muted); font-size: 13px; }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 48px 0;
+      font-size: 15px;
+    }
+
+    @media (max-width: 640px) {
+      .nav { padding: 0 12px; }
+      .nav-brand { font-size: 14px; }
+      .nav-tab { padding: 6px 10px; font-size: 13px; }
+      .tab-content { padding: 20px 12px; }
+      .login-box { padding: 36px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">ThreeUp Solutions</div>
+    <div class="login-sub">CAO Client Success Dashboard</div>
+    <input type="text" id="login-user" placeholder="Username" autocomplete="username" />
+    <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password" />
+    <button class="btn-login" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div id="dashboard">
+  <nav class="nav">
+    <div class="nav-brand">ThreeUp CAO</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('tab-input', this)">Weekly Input</button>
+      <button class="nav-tab" onclick="switchTab('tab-notes', this)">Notes History</button>
+      <button class="nav-tab" onclick="switchTab('tab-status', this)">Client Status</button>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Logout</button>
+  </nav>
+
+  <!-- TAB 1: Weekly Reviews Input -->
+  <div id="tab-input" class="tab-content active">
+    <h2>Weekly Reviews Input</h2>
+    <div class="week-label">Week: <span id="week-display"></span></div>
+    <div class="table-wrap">
+      <table id="reviews-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Client Name</th>
+            <th>Google Reviews</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="reviews-tbody"></tbody>
+      </table>
+    </div>
+    <div class="actions-row">
+      <button class="btn btn-green" id="submit-all-btn" onclick="submitAllReviews()">Submit All</button>
+      <div class="summary-msg" id="submit-summary"></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Notes History -->
+  <div id="tab-notes" class="tab-content">
+    <h2>Notes History</h2>
+    <div class="filters-row">
+      <div class="filter-group">
+        <label>Week</label>
+        <select class="filter-select" id="week-select"></select>
+      </div>
+      <div class="filter-group">
+        <label>Client</label>
+        <select class="filter-select-sm" id="client-filter">
+          <option value="">All Clients</option>
+        </select>
+      </div>
+      <button class="btn btn-blue" onclick="loadNotes()">Load Notes</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Date</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody id="notes-tbody">
+          <tr><td colspan="3" class="loading-row" style="color:var(--muted);text-align:center;padding:40px">Select a week and click Load Notes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 3: Client Status -->
+  <div id="tab-status" class="tab-content">
+    <h2>Client Status</h2>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+      <button class="btn btn-blue" onclick="loadClientStatus()">Refresh</button>
+      <span class="summary-msg" id="status-summary"></span>
+    </div>
+    <div class="status-grid" id="status-grid"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════
+const CONFIG = {
+  USERNAME: "threeup",
+  PASSWORD: "cao2026",
+  THREEUP_API_KEY: "pit-c0e6ff44-afae-4af9-ac53-171dd577fcb1",
+  APPS_SCRIPT_URL: "",  // filled in later
+  COUNTER_FIELD_ID: "nNx5vev4O2dBgLbqYNSh",
+  CLIENTS: [
+    {name:"Dr Ahmad Atout",                          contact_id:"rUkFiqGnFqiHSOvksW8E", sheet_id:"1oAZLGUfqSqpvKlRrr8BpIHw9ZWz24NgrTVL556bp6zM"},
+    {name:"Dr Reem Qudah",                           contact_id:"B0weJikiEY74aoGayW6Q", sheet_id:"SHEET_ID"},
+    {name:"Dr Wisam Khirfan",                        contact_id:"YbcHFUHg8s7hePI1jMcK", sheet_id:"SHEET_ID"},
+    {name:"Wared Clinic",                            contact_id:"1FfJa9aaDy2mwxB1Dcf2", sheet_id:"SHEET_ID"},
+    {name:"Dr Abu Elsamen Clinic",                   contact_id:"YzHLxrOW5SagHEh0UkFb", sheet_id:"SHEET_ID"},
+    {name:"Dr. Kamal Al Naji Dental Center",         contact_id:"OlplNYpudRTAwnHWiNGF", sheet_id:"SHEET_ID"},
+    {name:"Khaled Ahmad Harb",                       contact_id:"9HmvMPVoWNoSDyfHoszQ", sheet_id:"SHEET_ID"},
+    {name:"Haitham Adli Hijazi",                     contact_id:"mnnqJ8oyYmsF5dX8C7TS", sheet_id:"SHEET_ID"},
+    {name:"Dr. Khaled Hamdan & Dr. Kinda Hamdan",    contact_id:"wLIRjhMOHZBufABYjHmz", sheet_id:"SHEET_ID"},
+    {name:"Abdulhalim Mustafa Shaaban Heba",         contact_id:"DDLryo4De7lNmDqWtrdl", sheet_id:"SHEET_ID"},
+    {name:"Rawnaq Medical Clinic",                   contact_id:"P9ilsiBjEbSlv2f2hk5e", sheet_id:"SHEET_ID"},
+    {name:"Bella Clinic",                            contact_id:"3q3pRXEn77gZV6rChIJI", sheet_id:"SHEET_ID"},
+    {name:"Nova Dental Care",                        contact_id:"pouLaLnJaOtnXfil2o9m", sheet_id:"1i4a3LFAYSWbCPeuZhphzTAY2U_Bad8B5hgbzHXd5ncg"},
+    {name:"Zain Clinic (Dr. Tariq Abdo)",            contact_id:"urnOo9S9v1XbrsrAFoic", sheet_id:"SHEET_ID"},
+    {name:"Dr Alaa Suliman Clinic",                  contact_id:"DXJSyqn6qASU2K6aoYIm", sheet_id:"SHEET_ID"},
+    {name:"Ahmed Alhouli",                           contact_id:"iM2KlrOlNrdYjG7gTitb", sheet_id:"SHEET_ID"},
+    {name:"Row Clinic",                              contact_id:"znPeV5QoN4Tr6ITppaWp", sheet_id:"SHEET_ID"},
+    {name:"Dr Karam Almishry",                       contact_id:"XdbcfVWkdwFGuwUvhO64", sheet_id:"SHEET_ID"},
+    {name:"Thamer Fouad Mahmoud Alshrideh",          contact_id:"M11VE9Od96lHLw527njy", sheet_id:"SHEET_ID"},
+    {name:"Dr Ashraf Dababneh",                      contact_id:"rtp7NDMCF4POeCkbi7Dy", sheet_id:"SHEET_ID"},
+    {name:"Dr Heba Hammad Clinic",                   contact_id:"9gat9Li5io93HMP4JxsH", sheet_id:"SHEET_ID"},
+    {name:"Khalidi Rehab Center",                    contact_id:"S4v9dzAD6bAo5meswFdH", sheet_id:"SHEET_ID"},
+    {name:"Tayyem Clinics",                          contact_id:"nzbNaSMTocx1oYAzTsyK", sheet_id:"SHEET_ID"},
+    {name:"Rana Qudah",                              contact_id:"UUivkeHhaj5hm2CrlI2b", sheet_id:"SHEET_ID"},
+    {name:"WS Clinic Dental Clinic",                 contact_id:"6O3Jg9C2p7C5xF1aDlgp", sheet_id:"SHEET_ID"},
+    {name:"Al Mughrabi Dental Clinic",               contact_id:"nXob2y6qVBjAsRtSABPV", sheet_id:"SHEET_ID"},
+    {name:"Vogue Dental Clinic",                     contact_id:"lqAy8b7HVZEiHU2Wms39", sheet_id:"SHEET_ID"}
+  ]
+};
+
+const GHL_BASE = "https://services.leadconnectorhq.com";
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  if (u === CONFIG.USERNAME && p === CONFIG.PASSWORD) {
+    sessionStorage.setItem('cao_auth', '1');
+    showDashboard();
+  } else {
+    document.getElementById('login-error').textContent = 'Invalid credentials';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('cao_auth');
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').textContent = '';
+}
+
+function showDashboard() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'flex';
+  document.getElementById('dashboard').style.flexDirection = 'column';
+  initDashboard();
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+// DATE HELPERS
+// ═══════════════════════════════════════════
+function getWeekBounds(ref) {
+  // Returns {start: Date (Sat), end: Date (Thu)} for the most recent completed week
+  const d = ref || new Date();
+  // Day of week: 0=Sun,1=Mon,...,6=Sat
+  let day = d.getDay();
+  // Days since last Saturday (Sat=6)
+  let daysSinceSat = (day + 1) % 7; // Sun=1,Mon=2,...,Sat=0
+  let sat = new Date(d);
+  sat.setDate(d.getDate() - daysSinceSat);
+  sat.setHours(0, 0, 0, 0);
+  let thu = new Date(sat);
+  thu.setDate(sat.getDate() + 5);
+  thu.setHours(23, 59, 59, 999);
+  return { start: sat, end: thu };
+}
+
+function last12Weeks() {
+  const weeks = [];
+  const now = new Date();
+  for (let i = 0; i < 12; i++) {
+    const ref = new Date(now);
+    ref.setDate(now.getDate() - i * 7);
+    const w = getWeekBounds(ref);
+    weeks.push(w);
+  }
+  return weeks;
+}
+
+function fmtDate(d, short = false) {
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  if (short) return `${dd}/${mm}`;
+  return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function fmtDateTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) +
+         ' ' + d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+function initDashboard() {
+  initTab1();
+  initTab2();
+  initTab3();
+}
+
+// ═══════════════════════════════════════════
+// TAB 1 — Weekly Reviews Input
+// ═══════════════════════════════════════════
+function initTab1() {
+  const week = getWeekBounds();
+  document.getElementById('week-display').textContent =
+    `${fmtDate(week.start)} — ${fmtDate(week.end)}`;
+
+  const tbody = document.getElementById('reviews-tbody');
+  tbody.innerHTML = '';
+  CONFIG.CLIENTS.forEach((client, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="num">${i + 1}</td>
+      <td>${escHtml(client.name)}</td>
+      <td><input type="number" class="review-input" id="rev-${i}" min="0" placeholder="0" /></td>
+      <td class="status-cell" id="rev-status-${i}"></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function submitAllReviews() {
+  if (!CONFIG.APPS_SCRIPT_URL) {
+    alert('Please configure APPS_SCRIPT_URL in the CONFIG section at the top of this file.');
+    return;
+  }
+  const btn = document.getElementById('submit-all-btn');
+  const summary = document.getElementById('submit-summary');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+  summary.textContent = '';
+
+  let ok = 0, total = 0;
+  const promises = CONFIG.CLIENTS.map(async (client, i) => {
+    const input = document.getElementById(`rev-${i}`);
+    const val = parseInt(input.value, 10);
+    if (!val || val <= 0) return;
+    if (client.sheet_id === 'SHEET_ID') {
+      document.getElementById(`rev-status-${i}`).textContent = '⚠️';
+      return;
+    }
+    total++;
+    const statusEl = document.getElementById(`rev-status-${i}`);
+    statusEl.innerHTML = '<span class="spinner"></span>';
+    try {
+      const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ sheet_id: client.sheet_id, value: val }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await resp.json();
+      if (data.success) { ok++; statusEl.textContent = '✅'; }
+      else { statusEl.textContent = '❌'; }
+    } catch {
+      statusEl.textContent = '❌';
+    }
+  });
+
+  await Promise.all(promises);
+
+  btn.disabled = false;
+  btn.textContent = 'Submit All';
+  if (total === 0) {
+    summary.textContent = 'No values entered.';
+    summary.className = 'summary-msg';
+  } else {
+    summary.textContent = `${ok}/${total} submitted successfully`;
+    summary.className = ok === total ? 'summary-msg ok' : 'summary-msg err';
+  }
+}
+
+// ═══════════════════════════════════════════
+// TAB 2 — Notes History
+// ═══════════════════════════════════════════
+function initTab2() {
+  const weekSel = document.getElementById('week-select');
+  weekSel.innerHTML = '';
+  last12Weeks().forEach((w, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Sat ${fmtDate(w.start, true)} — Thu ${fmtDate(w.end, true)}`;
+    weekSel.appendChild(opt);
+  });
+
+  const clientFilter = document.getElementById('client-filter');
+  clientFilter.innerHTML = '<option value="">All Clients</option>';
+  CONFIG.CLIENTS.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.contact_id;
+    opt.textContent = c.name;
+    clientFilter.appendChild(opt);
+  });
+}
+
+async function loadNotes() {
+  const weekIdx = parseInt(document.getElementById('week-select').value, 10);
+  const clientFilter = document.getElementById('client-filter').value;
+  const weeks = last12Weeks();
+  const week = weeks[weekIdx];
+
+  const tbody = document.getElementById('notes-tbody');
+  tbody.innerHTML = `<tr><td colspan="3" class="loading-row"><span class="spinner"></span> Loading notes...</td></tr>`;
+
+  const headers = {
+    'Authorization': `Bearer ${CONFIG.THREEUP_API_KEY}`,
+    'Version': '2021-07-28'
+  };
+
+  const clients = clientFilter
+    ? CONFIG.CLIENTS.filter(c => c.contact_id === clientFilter)
+    : CONFIG.CLIENTS;
+
+  const allNotes = [];
+
+  await Promise.all(clients.map(async client => {
+    try {
+      const resp = await fetch(`${GHL_BASE}/contacts/${client.contact_id}/notes`, { headers });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const notes = data.notes || [];
+      notes.forEach(note => {
+        const d = new Date(note.dateAdded);
+        if (d >= week.start && d <= week.end) {
+          allNotes.push({ client: client.name, date: note.dateAdded, body: note.body || '' });
+        }
+      });
+    } catch { /* skip */ }
+  }));
+
+  allNotes.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  tbody.innerHTML = '';
+  if (allNotes.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3" class="loading-row">No notes found for this week</td></tr>`;
+    return;
+  }
+
+  allNotes.forEach((note, i) => {
+    const preview = note.body.replace(/\n/g, ' ').slice(0, 100) + (note.body.length > 100 ? '…' : '');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escHtml(note.client)}</td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:13px">${fmtDateTime(note.date)}</td>
+      <td>
+        <div class="note-preview">${escHtml(preview)}</div>
+        ${note.body.length > 100 ? `
+          <button class="note-expand-btn" onclick="toggleNote(${i})">Show full note</button>
+          <pre class="note-full" id="note-full-${i}">${escHtml(note.body)}</pre>
+        ` : ''}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function toggleNote(i) {
+  const el = document.getElementById(`note-full-${i}`);
+  const btn = el.previousElementSibling;
+  if (el.style.display === 'block') {
+    el.style.display = 'none';
+    btn.textContent = 'Show full note';
+  } else {
+    el.style.display = 'block';
+    btn.textContent = 'Hide';
+  }
+}
+
+// ═══════════════════════════════════════════
+// TAB 3 — Client Status
+// ═══════════════════════════════════════════
+function initTab3() {
+  const grid = document.getElementById('status-grid');
+  grid.innerHTML = '';
+  CONFIG.CLIENTS.forEach(client => {
+    const card = document.createElement('div');
+    card.className = 'client-card';
+    card.id = `card-${client.contact_id}`;
+    card.innerHTML = `
+      <div class="card-name">${escHtml(client.name)}</div>
+      <div class="card-loading" style="color:var(--muted);font-size:13px">Click Refresh to load</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+async function loadClientStatus() {
+  const summary = document.getElementById('status-summary');
+  summary.textContent = 'Loading...';
+
+  const headers = {
+    'Authorization': `Bearer ${CONFIG.THREEUP_API_KEY}`,
+    'Version': '2021-07-28'
+  };
+
+  let loaded = 0;
+
+  await Promise.all(CONFIG.CLIENTS.map(async client => {
+    const card = document.getElementById(`card-${client.contact_id}`);
+    card.innerHTML = `
+      <div class="card-name">${escHtml(client.name)}</div>
+      <div class="card-loading"><span class="spinner"></span></div>
+    `;
+    try {
+      // Fetch contact for counter
+      const [contactResp, notesResp] = await Promise.all([
+        fetch(`${GHL_BASE}/contacts/${client.contact_id}`, { headers }),
+        fetch(`${GHL_BASE}/contacts/${client.contact_id}/notes?limit=1`, { headers })
+      ]);
+
+      let counterVal = 0;
+      if (contactResp.ok) {
+        const data = await contactResp.json();
+        const fields = data.contact?.customFields || [];
+        const field = fields.find(f => f.id === CONFIG.COUNTER_FIELD_ID);
+        counterVal = field ? (parseInt(field.value, 10) || 0) : 0;
+      }
+
+      let lastNoteDate = null;
+      if (notesResp.ok) {
+        const ndata = await notesResp.json();
+        const notes = ndata.notes || [];
+        if (notes.length > 0) {
+          const sorted = notes.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+          lastNoteDate = sorted[0].dateAdded;
+        }
+      }
+
+      const emoji = counterVal === 0 ? '🟢' : counterVal === 1 ? '🟡' : counterVal === 2 ? '🟠' : '🔴';
+      const color = counterVal === 0 ? 'var(--green)' : counterVal === 1 ? 'var(--yellow)' : counterVal === 2 ? 'var(--orange)' : 'var(--red)';
+
+      card.innerHTML = `
+        <div class="card-name">${escHtml(client.name)}</div>
+        <div class="card-counter-label">Bad Report Counter</div>
+        <div class="card-counter" style="color:${color}">${emoji} <span>${counterVal}</span></div>
+        <div class="card-last-note">${lastNoteDate ? 'Last note: ' + fmtDateTime(lastNoteDate) : 'No notes found'}</div>
+      `;
+      loaded++;
+    } catch {
+      card.innerHTML = `
+        <div class="card-name">${escHtml(client.name)}</div>
+        <div style="color:var(--red);font-size:13px">Failed to load</div>
+      `;
+    }
+  }));
+
+  summary.textContent = `${loaded}/${CONFIG.CLIENTS.length} clients loaded`;
+}
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ═══════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════
+if (sessionStorage.getItem('cao_auth') === '1') {
+  showDashboard();
+}
+</script>
+</body>
+</html>
