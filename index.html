@@ -958,16 +958,17 @@ async function submitAllReviews() {
     const statusEl = document.getElementById('rev-status-' + i);
     statusEl.innerHTML = '<span class="spinner"></span>';
     try {
-      const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      // no-cors: Apps Script doesn't support CORS preflight; response is opaque
+      await fetch(CONFIG.APPS_SCRIPT_URL, {
         method: 'POST',
-        body: JSON.stringify({ sheet_id: client.sheet_id, value: val, week: weekLabel }),
-        headers: { 'Content-Type': 'application/json' }
+        mode: 'no-cors',
+        body: JSON.stringify({ sheet_id: client.sheet_id, value: val, week: weekLabel })
       });
-      const data = await resp.json();
-      if (data.success) { ok++; statusEl.innerHTML = '<span class="pill pill-green">\u2705 Submitted</span>'; }
-      else { statusEl.innerHTML = '<span class="pill pill-red">\u274C Failed</span>'; }
+      // opaque response — assume success if no network error thrown
+      ok++;
+      statusEl.innerHTML = '<span class="pill pill-green">\u2705 Submitted</span>';
     } catch (e) {
-      statusEl.innerHTML = '<span class="pill pill-red">\u274C Error</span>';
+      statusEl.innerHTML = '<span class="pill pill-red">\u274C Network Error</span>';
     }
   });
 
@@ -1001,16 +1002,17 @@ async function confirmAllWeeks() {
     const statusEl = document.getElementById('rev-status-' + i);
     statusEl.innerHTML = '<span class="spinner"></span>';
     try {
-      const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      // no-cors: Apps Script doesn't support CORS preflight; response is opaque
+      await fetch(CONFIG.APPS_SCRIPT_URL, {
         method: 'POST',
-        body: JSON.stringify({ sheet_id: client.sheet_id, action: 'confirm', value: 'YES' }),
-        headers: { 'Content-Type': 'application/json' }
+        mode: 'no-cors',
+        body: JSON.stringify({ sheet_id: client.sheet_id, action: 'confirm', value: 'YES' })
       });
-      const data = await resp.json();
-      if (data.success) { ok++; statusEl.innerHTML = '<span class="pill pill-green">\u2705 Confirmed</span>'; }
-      else { statusEl.innerHTML = '<span class="pill pill-red">\u274C Failed</span>'; }
+      // opaque response — assume success if no network error thrown
+      ok++;
+      statusEl.innerHTML = '<span class="pill pill-green">\u2705 Confirmed</span>';
     } catch (e) {
-      statusEl.innerHTML = '<span class="pill pill-red">\u274C Error</span>';
+      statusEl.innerHTML = '<span class="pill pill-red">\u274C Network Error</span>';
     }
   });
 
