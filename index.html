@@ -11,116 +11,153 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       #0a1628;
-      --bg2:      #111d35;
-      --bg3:      #1a2a45;
-      --border:   #1e3050;
-      --blue:     #4f8ef7;
-      --blue-dk:  #3a72d8;
-      --green:    #22c55e;
-      --red:      #ef4444;
-      --orange:   #f97316;
-      --yellow:   #eab308;
-      --text:     #e8eef8;
-      --muted:    #7a90b0;
-      --radius:   10px;
+      --bg:        #f8fafc;
+      --bg2:       #ffffff;
+      --bg3:       #f1f5f9;
+      --border:    #e2e8f0;
+      --blue:      #2563eb;
+      --blue-dk:   #1d4ed8;
+      --blue-lt:   #eff6ff;
+      --green:     #16a34a;
+      --green-lt:  #f0fdf4;
+      --red:       #dc2626;
+      --red-lt:    #fef2f2;
+      --orange:    #d97706;
+      --orange-lt: #fffbeb;
+      --yellow:    #ca8a04;
+      --text:      #0f172a;
+      --muted:     #64748b;
+      --radius:    10px;
+      --shadow:    0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+      --shadow-md: 0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.05);
     }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
     }
 
-    /* ── LOGIN ── */
+    /* ══════════════════ LOGIN ══════════════════ */
     #login-screen {
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
       padding: 20px;
+      background: linear-gradient(135deg, #f0f7ff 0%, #f8fafc 55%, #f5f0ff 100%);
     }
     .login-box {
       background: var(--bg2);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 48px 40px;
+      border-radius: 20px;
+      padding: 52px 44px;
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
       text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
     }
     .login-logo {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 700;
       color: var(--blue);
-      margin-bottom: 6px;
       letter-spacing: -0.5px;
+      margin-bottom: 4px;
     }
-    .login-sub {
+    .login-tagline {
+      font-size: 13px;
       color: var(--muted);
-      font-size: 14px;
-      margin-bottom: 36px;
+      font-weight: 500;
+      letter-spacing: .04em;
+    }
+    .login-divider {
+      width: 40px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue), #818cf8);
+      border-radius: 2px;
+      margin: 20px auto 32px;
+    }
+    .login-field { margin-bottom: 18px; text-align: left; }
+    .login-field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 7px;
     }
     .login-box input {
       width: 100%;
       background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
       color: var(--text);
       font-family: inherit;
       font-size: 15px;
-      padding: 12px 16px;
-      margin-bottom: 14px;
+      padding: 13px 16px;
       outline: none;
-      transition: border-color .2s;
+      transition: border-color .2s, box-shadow .2s, background .2s;
     }
-    .login-box input:focus { border-color: var(--blue); }
-    .login-box input::placeholder { color: var(--muted); }
+    .login-box input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+      background: #fff;
+    }
+    .login-box input::placeholder { color: #94a3b8; }
     .btn-login {
       width: 100%;
-      background: var(--blue);
+      background: linear-gradient(135deg, var(--blue) 0%, #4f46e5 100%);
       color: #fff;
       border: none;
-      border-radius: var(--radius);
+      border-radius: 10px;
       font-family: inherit;
       font-size: 15px;
       font-weight: 600;
-      padding: 13px;
+      padding: 14px;
       cursor: pointer;
-      transition: background .2s;
-      margin-top: 4px;
+      transition: opacity .2s, transform .15s;
+      margin-top: 8px;
+      letter-spacing: .01em;
     }
-    .btn-login:hover { background: var(--blue-dk); }
+    .btn-login:hover { opacity: .92; transform: translateY(-1px); }
+    .btn-login:active { transform: translateY(0); }
     .login-error {
       color: var(--red);
       font-size: 13px;
-      margin-top: 12px;
-      min-height: 20px;
+      margin-top: 14px;
+      background: var(--red-lt);
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 9px 14px;
+      display: none;
     }
+    .login-error.show { display: block; }
 
-    /* ── DASHBOARD ── */
-    #dashboard { display: none; flex-direction: column; min-height: 100vh; }
+    /* ══════════════════ ADMIN DASHBOARD ══════════════════ */
+    #admin-dashboard { display: none; flex-direction: column; min-height: 100vh; }
 
-    /* NAV */
     .nav {
       background: var(--bg2);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      padding: 0 24px;
-      height: 56px;
+      padding: 0 28px;
+      height: 60px;
       gap: 8px;
       position: sticky;
       top: 0;
       z-index: 100;
+      box-shadow: var(--shadow);
     }
     .nav-brand {
       font-size: 16px;
       font-weight: 700;
       color: var(--blue);
-      margin-right: 16px;
+      margin-right: 20px;
       white-space: nowrap;
+      letter-spacing: -0.3px;
     }
     .nav-tabs { display: flex; gap: 4px; flex: 1; }
     .nav-tab {
@@ -137,75 +174,108 @@
       white-space: nowrap;
     }
     .nav-tab:hover { background: var(--bg3); color: var(--text); }
-    .nav-tab.active { background: var(--blue); color: #fff; }
+    .nav-tab.active { background: var(--blue-lt); color: var(--blue); font-weight: 600; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-user-badge {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 4px 14px;
+      white-space: nowrap;
+    }
     .btn-logout {
       background: none;
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       color: var(--muted);
       font-family: inherit;
       font-size: 13px;
-      padding: 6px 14px;
+      font-weight: 500;
+      padding: 7px 14px;
       border-radius: 8px;
       cursor: pointer;
-      transition: border-color .2s, color .2s;
+      transition: border-color .2s, color .2s, background .2s;
       white-space: nowrap;
     }
-    .btn-logout:hover { border-color: var(--red); color: var(--red); }
+    .btn-logout:hover { border-color: var(--red); color: var(--red); background: var(--red-lt); }
 
     /* TAB CONTENT */
-    .tab-content { display: none; padding: 28px 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .tab-content { display: none; padding: 32px 28px; max-width: 1200px; margin: 0 auto; width: 100%; }
     .tab-content.active { display: block; }
 
-    /* COMMON */
-    h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
-    .week-label {
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 24px;
-    }
-    .week-label span { color: var(--blue); font-weight: 500; }
+    h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+    .page-subtitle { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+    .page-subtitle span { color: var(--blue); font-weight: 600; }
 
     /* TABLE */
-    .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      background: var(--bg2);
+    }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
     thead th {
       background: var(--bg3);
       color: var(--muted);
       font-weight: 600;
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: .05em;
-      padding: 12px 16px;
+      letter-spacing: .07em;
+      padding: 12px 18px;
       text-align: left;
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
     }
     tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--bg3); }
-    tbody td { padding: 11px 16px; vertical-align: middle; }
-    td.num { color: var(--muted); font-size: 13px; width: 40px; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody td { padding: 13px 18px; vertical-align: middle; }
+    td.num { color: var(--muted); font-size: 12px; width: 40px; }
 
     /* INPUT */
     input[type="number"].review-input {
       background: var(--bg3);
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       border-radius: 8px;
       color: var(--text);
       font-family: inherit;
       font-size: 14px;
-      padding: 7px 10px;
+      padding: 8px 12px;
       width: 90px;
       outline: none;
-      transition: border-color .2s;
+      transition: border-color .2s, box-shadow .2s;
       -moz-appearance: textfield;
     }
     input[type="number"].review-input::-webkit-inner-spin-button,
     input[type="number"].review-input::-webkit-outer-spin-button { -webkit-appearance: none; }
-    input[type="number"].review-input:focus { border-color: var(--blue); }
+    input[type="number"].review-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+      background: #fff;
+    }
 
-    /* STATUS BADGE */
     .status-cell { font-size: 18px; text-align: center; }
+
+    /* PILL BADGES */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .pill-green  { background: var(--green-lt);  color: var(--green);  }
+    .pill-red    { background: var(--red-lt);    color: var(--red);    }
+    .pill-orange { background: var(--orange-lt); color: var(--orange); }
+    .pill-gray   { background: var(--bg3);       color: var(--muted);  }
+    .pill-blue   { background: var(--blue-lt);   color: var(--blue);   }
 
     /* BUTTONS */
     .btn {
@@ -213,25 +283,35 @@
       align-items: center;
       gap: 6px;
       border: none;
-      border-radius: 8px;
+      border-radius: 9px;
       font-family: inherit;
       font-size: 14px;
       font-weight: 600;
-      padding: 10px 20px;
+      padding: 10px 22px;
       cursor: pointer;
-      transition: opacity .2s, background .2s;
+      transition: opacity .2s, transform .15s, box-shadow .2s;
     }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn:active:not(:disabled) { transform: translateY(0); }
     .btn:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-green { background: var(--green); color: #fff; }
-    .btn-green:hover:not(:disabled) { background: #16a34a; }
-    .btn-blue { background: var(--blue); color: #fff; }
-    .btn-blue:hover:not(:disabled) { background: var(--blue-dk); }
-    .btn-ghost {
-      background: var(--bg3);
-      color: var(--text);
-      border: 1px solid var(--border);
+    .btn-green {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(22,163,74,.25);
     }
-    .btn-ghost:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+    .btn-green:hover:not(:disabled) { box-shadow: 0 4px 14px rgba(22,163,74,.35); }
+    .btn-blue {
+      background: linear-gradient(135deg, var(--blue), #4f46e5);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(37,99,235,.25);
+    }
+    .btn-blue:hover:not(:disabled) { box-shadow: 0 4px 14px rgba(37,99,235,.35); }
+    .btn-ghost {
+      background: var(--bg2);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); background: var(--blue-lt); }
 
     .actions-row {
       display: flex;
@@ -241,10 +321,27 @@
       flex-wrap: wrap;
     }
     .summary-msg { font-size: 14px; color: var(--muted); }
-    .summary-msg.ok { color: var(--green); }
-    .summary-msg.err { color: var(--red); }
+    .summary-msg.ok  { color: var(--green); font-weight: 500; }
+    .summary-msg.err { color: var(--red);   font-weight: 500; }
 
-    /* NOTES TAB */
+    /* WEEK SELECTOR */
+    .week-selector-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .week-selector-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      white-space: nowrap;
+    }
+
+    /* FILTERS */
     .filters-row {
       display: flex;
       gap: 12px;
@@ -253,22 +350,32 @@
       flex-wrap: wrap;
     }
     .filter-group { display: flex; flex-direction: column; gap: 6px; }
-    .filter-group label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+    .filter-group label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
     select.filter-select, select.filter-select-sm {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
       color: var(--text);
       font-family: inherit;
       font-size: 14px;
-      padding: 9px 12px;
+      padding: 9px 14px;
       outline: none;
       cursor: pointer;
-      transition: border-color .2s;
+      transition: border-color .2s, box-shadow .2s;
+      box-shadow: var(--shadow);
     }
     select.filter-select { min-width: 220px; }
     select.filter-select-sm { min-width: 200px; }
-    select.filter-select:focus, select.filter-select-sm:focus { border-color: var(--blue); }
+    select.filter-select:focus, select.filter-select-sm:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+    }
 
     .note-preview { color: var(--muted); font-size: 13px; max-width: 340px; }
     .note-expand-btn {
@@ -277,6 +384,7 @@
       color: var(--blue);
       font-family: inherit;
       font-size: 12px;
+      font-weight: 500;
       cursor: pointer;
       padding: 0;
       white-space: nowrap;
@@ -284,7 +392,7 @@
     .note-full {
       display: none;
       margin-top: 8px;
-      background: var(--bg);
+      background: var(--bg3);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 12px;
@@ -298,7 +406,7 @@
     /* SPINNER */
     .spinner {
       display: inline-block;
-      width: 20px; height: 20px;
+      width: 18px; height: 18px;
       border: 2px solid var(--border);
       border-top-color: var(--blue);
       border-radius: 50%;
@@ -306,59 +414,119 @@
       vertical-align: middle;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    .loading-row td { color: var(--muted); text-align: center; padding: 32px; }
+    .loading-row td { color: var(--muted); text-align: center; padding: 40px; }
 
     /* CLIENT STATUS GRID */
     .status-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 16px;
-      margin-top: 20px;
+      margin-top: 8px;
     }
     @media (max-width: 900px) { .status-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 560px) { .status-grid { grid-template-columns: 1fr; } }
 
     .client-card {
       background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 20px;
-      transition: border-color .2s;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: border-color .2s, box-shadow .2s, transform .15s;
+      box-shadow: var(--shadow);
     }
-    .client-card:hover { border-color: var(--blue); }
+    .client-card:hover { border-color: var(--blue); box-shadow: var(--shadow-md); transform: translateY(-1px); }
     .card-name {
       font-size: 14px;
       font-weight: 600;
-      margin-bottom: 12px;
-      line-height: 1.3;
-      min-height: 36px;
+      margin-bottom: 14px;
+      line-height: 1.4;
+      min-height: 40px;
+      color: var(--text);
     }
     .card-counter {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 24px;
+      gap: 10px;
+      font-size: 26px;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
-    .card-counter-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-    .card-last-note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .card-counter-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; }
+    .card-last-note { font-size: 12px; color: var(--muted); margin-top: 8px; }
     .card-loading { color: var(--muted); font-size: 13px; }
 
-    .empty-state {
-      text-align: center;
-      color: var(--muted);
-      padding: 48px 0;
+    /* ══════════════════ CLIENT PORTAL ══════════════════ */
+    #client-dashboard { display: none; flex-direction: column; min-height: 100vh; }
+
+    .client-nav {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      height: 60px;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .client-nav-brand {
       font-size: 15px;
+      font-weight: 700;
+      color: var(--blue);
+      margin-right: auto;
+      letter-spacing: -0.3px;
+    }
+    .client-nav-right { display: flex; align-items: center; gap: 10px; }
+
+    .client-content { padding: 36px 28px; max-width: 1000px; margin: 0 auto; width: 100%; }
+
+    .client-welcome {
+      background: linear-gradient(135deg, var(--blue-lt) 0%, #f5f3ff 100%);
+      border: 1px solid #c7d7fd;
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 32px;
+    }
+    .client-welcome h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .client-welcome p { font-size: 14px; color: var(--muted); }
+
+    .client-status-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 18px;
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 20px;
+      box-shadow: var(--shadow);
+    }
+    .client-status-emoji { font-size: 28px; line-height: 1; }
+    .client-status-label { font-size: 15px; font-weight: 700; color: var(--text); }
+    .client-status-text  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border);
     }
 
     @media (max-width: 640px) {
-      .nav { padding: 0 12px; }
-      .nav-brand { font-size: 14px; }
+      .nav, .client-nav { padding: 0 14px; }
+      .nav-brand, .client-nav-brand { font-size: 14px; }
       .nav-tab { padding: 6px 10px; font-size: 13px; }
-      .tab-content { padding: 20px 12px; }
+      .tab-content, .client-content { padding: 20px 14px; }
       .login-box { padding: 36px 24px; }
+      .client-welcome { padding: 22px 20px; }
     }
   </style>
 </head>
@@ -368,36 +536,44 @@
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">ThreeUp Solutions</div>
-    <div class="login-sub">CAO Client Success Dashboard</div>
-    <input type="text" id="login-user" placeholder="Username" autocomplete="username" />
-    <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password" />
-    <button class="btn-login" onclick="doLogin()">Sign In</button>
-    <div class="login-error" id="login-error"></div>
+    <div class="login-tagline">Client Success Platform</div>
+    <div class="login-divider"></div>
+    <div class="login-field">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="Enter username" autocomplete="username" />
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Enter password" autocomplete="current-password" />
+    </div>
+    <button class="btn-login" onclick="doLogin()">Sign In &rarr;</button>
+    <div class="login-error" id="login-error">Invalid username or password. Please try again.</div>
   </div>
 </div>
 
-<!-- ═══ DASHBOARD ═══ -->
-<div id="dashboard">
+<!-- ═══ ADMIN DASHBOARD ═══ -->
+<div id="admin-dashboard">
   <nav class="nav">
-    <div class="nav-brand">ThreeUp CAO</div>
+    <div class="nav-brand">&#9889; ThreeUp CAO</div>
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchTab('tab-input', this)">Weekly Input</button>
       <button class="nav-tab" onclick="switchTab('tab-notes', this)">Notes History</button>
       <button class="nav-tab" onclick="switchTab('tab-status', this)">Client Status</button>
     </div>
-    <button class="btn-logout" onclick="doLogout()">Logout</button>
+    <div class="nav-right">
+      <span class="nav-user-badge" id="admin-user-badge">Admin</span>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
   </nav>
 
   <!-- TAB 1: Weekly Reviews Input -->
   <div id="tab-input" class="tab-content active">
     <h2>Weekly Reviews Input</h2>
-    <div class="filters-row" style="margin-bottom:16px">
-      <div class="filter-group">
-        <label>Select Week</label>
-        <select class="filter-select" id="tab1-week-select" onchange="onTab1WeekChange()"></select>
-      </div>
+    <div class="page-subtitle">Week: <span id="week-display"></span></div>
+    <div class="week-selector-wrap">
+      <span class="week-selector-label">Select Week</span>
+      <select class="filter-select" id="tab1-week-select" onchange="onTab1WeekChange()" style="min-width:300px"></select>
     </div>
-    <div class="week-label">Week: <span id="week-display"></span></div>
     <div class="table-wrap">
       <table id="reviews-table">
         <thead>
@@ -413,7 +589,7 @@
     </div>
     <div class="actions-row">
       <button class="btn btn-green" id="submit-all-btn" onclick="submitAllReviews()">Submit All</button>
-      <button class="btn btn-green" id="confirm-all-btn" onclick="confirmAllWeeks()">\u2705 Confirm All Weeks</button>
+      <button class="btn btn-green" id="confirm-all-btn" onclick="confirmAllWeeks()">&#10003; Confirm All Weeks</button>
       <div class="summary-msg" id="submit-summary"></div>
     </div>
   </div>
@@ -453,11 +629,53 @@
   <!-- TAB 3: Client Status -->
   <div id="tab-status" class="tab-content">
     <h2>Client Status</h2>
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap">
-      <button class="btn btn-blue" onclick="loadClientStatus()">Refresh</button>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap">
+      <button class="btn btn-blue" onclick="loadClientStatus()">&#8635; Refresh</button>
       <span class="summary-msg" id="status-summary"></span>
     </div>
     <div class="status-grid" id="status-grid"></div>
+  </div>
+</div>
+
+<!-- ═══ CLIENT PORTAL ═══ -->
+<div id="client-dashboard">
+  <nav class="client-nav">
+    <div class="client-nav-brand">&#9889; ThreeUp Solutions</div>
+    <div class="client-nav-right">
+      <span class="nav-user-badge" id="client-user-badge"></span>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </nav>
+  <div class="client-content">
+    <div class="client-welcome">
+      <h1 id="client-welcome-heading">Welcome &#128075;</h1>
+      <p>Your weekly performance report &mdash; updated automatically each week by ThreeUp Solutions.</p>
+      <div class="client-status-banner" id="client-status-banner">
+        <span class="client-status-emoji">&#8987;</span>
+        <div>
+          <div class="client-status-label">Loading status&hellip;</div>
+          <div class="client-status-text">Fetching your data</div>
+        </div>
+      </div>
+    </div>
+    <div class="section-title">Weekly Performance Breakdown</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Week</th>
+            <th>Google Reviews</th>
+            <th>Hook</th>
+            <th>Offer</th>
+            <th>Cancel Rate</th>
+            <th>Week Status</th>
+          </tr>
+        </thead>
+        <tbody id="client-report-tbody">
+          <tr><td colspan="6" class="loading-row"><span class="spinner"></span> Loading your report&hellip;</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -468,7 +686,7 @@
 // ═══════════════════════════════════════════
 const CONFIG = {
   THREEUP_API_KEY: "pit-a5b6ba64-25d8-41c2-a472-0e5a083ae283",
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyiRGIWu81etfVJ2Q3FwBTEAYKsPCn_biPbxleUrE2KSPZDj0ZVVBNwNTFKMUoCGMbz/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxadk_PUEAkztTpOOHQZ63iTcfrK2WeGhm0EZtgM57zFg3TWTU2UemWg0w8HcpOLnWC/exec",
   COUNTER_FIELD_ID: "nNx5vev4O2dBgLbqYNSh",
   CLIENTS: [
     {name:"Dr Ahmad Atout",                          contact_id:"rUkFiqGnFqiHSOvksW8E", sheet_id:"1oAZLGUfqSqpvKlRrr8BpIHw9ZWz24NgrTVL556bp6zM"},
@@ -498,6 +716,38 @@ const CONFIG = {
     {name:"WS Clinic Dental Clinic",                 contact_id:"6O3Jg9C2p7C5xF1aDlgp", sheet_id:"11StMVc3Tiz_wTalVNgS-Xup5jN1jxqfb1s7TjQzzE7w"},
     {name:"Al Mughrabi Dental Clinic",               contact_id:"nXob2y6qVBjAsRtSABPV", sheet_id:"1CHwT_tgGtyD4ZC0ZmvbG1DLA5SjXWIhRsy2n5tKa_Ko"},
     {name:"Vogue Dental Clinic",                     contact_id:"lqAy8b7HVZEiHU2Wms39", sheet_id:"1q9QuiJHb5TSFq406qyUoKaWivctKkkEew3WgeSd0egk"}
+  ],
+  // Client portal credentials
+  // Username: first 2 letters of name (lowercase letters only) + 3-digit index
+  // Password: hardcoded random 8-char alphanumeric
+  CLIENT_LOGINS: [
+    {username:"dr001", password:"Xk9mP2qL", clientIndex:0},
+    {username:"dr002", password:"Rj7nK5wZ", clientIndex:1},
+    {username:"dr003", password:"Bm4vT8cN", clientIndex:2},
+    {username:"wa004", password:"Hs6pW3xQ", clientIndex:3},
+    {username:"dr005", password:"Yd2rF7jU", clientIndex:4},
+    {username:"dr006", password:"Zc8wM4bE", clientIndex:5},
+    {username:"kh007", password:"Pn5kA9sV", clientIndex:6},
+    {username:"ha008", password:"Lq3tG6mD", clientIndex:7},
+    {username:"dr009", password:"Wf7hB2nJ", clientIndex:8},
+    {username:"ab010", password:"Tr4xC8pK", clientIndex:9},
+    {username:"ra011", password:"Mv6jS3wR", clientIndex:10},
+    {username:"be012", password:"Dk9nE5tY", clientIndex:11},
+    {username:"no013", password:"Gc2mH7qB", clientIndex:12},
+    {username:"za014", password:"Fp8wL4vN", clientIndex:13},
+    {username:"dr015", password:"Nq5kT3xZ", clientIndex:14},
+    {username:"ah016", password:"Sb7pW9cM", clientIndex:15},
+    {username:"ro017", password:"Jm4vK2rH", clientIndex:16},
+    {username:"dr018", password:"Ct6nF8wP", clientIndex:17},
+    {username:"th019", password:"Xr3mB5jE", clientIndex:18},
+    {username:"dr020", password:"Vk9tG2qL", clientIndex:19},
+    {username:"dr021", password:"Yw7pN4sD", clientIndex:20},
+    {username:"kh022", password:"Hz5mC8bT", clientIndex:21},
+    {username:"ta023", password:"Rw3kJ6xF", clientIndex:22},
+    {username:"ra024", password:"Bv8nP4mQ", clientIndex:23},
+    {username:"ws025", password:"Kc2tH7wE", clientIndex:24},
+    {username:"al026", password:"Lf6jS3nV", clientIndex:25},
+    {username:"vo027", password:"Qg4mX9pR", clientIndex:26}
   ]
 };
 
@@ -506,7 +756,7 @@ const GHL_BASE = "https://services.leadconnectorhq.com";
 // ═══════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════
-const USERS = {
+const ADMIN_USERS = {
   "threeup": "cao2026",
   "hamzeh":  "hamzeh2026",
   "laith":   "laith2026"
@@ -515,40 +765,67 @@ const USERS = {
 function doLogin() {
   const u = document.getElementById('login-user').value.trim();
   const p = document.getElementById('login-pass').value;
-  if (USERS[u] && USERS[u] === p) {
-    sessionStorage.setItem('cao_auth', '1');
-    showDashboard();
-  } else {
-    document.getElementById('login-error').textContent = 'Invalid credentials';
+  const errEl = document.getElementById('login-error');
+  errEl.classList.remove('show');
+
+  // Admin check
+  if (ADMIN_USERS[u] && ADMIN_USERS[u] === p) {
+    sessionStorage.setItem('cao_session', 'admin:' + u);
+    showAdminDashboard(u);
+    return;
   }
+
+  // Client check
+  const clientLogin = CONFIG.CLIENT_LOGINS.find(c => c.username === u && c.password === p);
+  if (clientLogin) {
+    sessionStorage.setItem('cao_session', 'client:' + clientLogin.clientIndex);
+    showClientDashboard(clientLogin.clientIndex);
+    return;
+  }
+
+  errEl.classList.add('show');
 }
 
 function doLogout() {
-  sessionStorage.removeItem('cao_auth');
-  document.getElementById('dashboard').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
+  sessionStorage.removeItem('cao_session');
+  document.getElementById('admin-dashboard').style.display  = 'none';
+  document.getElementById('client-dashboard').style.display = 'none';
+  document.getElementById('login-screen').style.display     = 'flex';
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
-  document.getElementById('login-error').textContent = '';
+  document.getElementById('login-error').classList.remove('show');
 }
 
-function showDashboard() {
+function showAdminDashboard(username) {
   document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('dashboard').style.display = 'flex';
-  document.getElementById('dashboard').style.flexDirection = 'column';
+  const dash = document.getElementById('admin-dashboard');
+  dash.style.display = 'flex';
+  dash.style.flexDirection = 'column';
+  document.getElementById('admin-user-badge').textContent = username || 'Admin';
   initDashboard();
 }
 
-document.getElementById('login-pass').addEventListener('keydown', e => {
+function showClientDashboard(clientIndex) {
+  document.getElementById('login-screen').style.display = 'none';
+  const dash = document.getElementById('client-dashboard');
+  dash.style.display = 'flex';
+  dash.style.flexDirection = 'column';
+  const client = CONFIG.CLIENTS[clientIndex];
+  document.getElementById('client-welcome-heading').textContent = 'Welcome, ' + client.name + ' \uD83D\uDC4B';
+  document.getElementById('client-user-badge').textContent = client.name;
+  loadClientReport(client);
+}
+
+document.getElementById('login-pass').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doLogin();
 });
 
 // ═══════════════════════════════════════════
-// TABS
+// TABS (admin)
 // ═══════════════════════════════════════════
 function switchTab(tabId, btn) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.nav-tab').forEach(function(b) { b.classList.remove('active'); });
   document.getElementById(tabId).classList.add('active');
   btn.classList.add('active');
 }
@@ -557,16 +834,13 @@ function switchTab(tabId, btn) {
 // DATE HELPERS
 // ═══════════════════════════════════════════
 function getWeekBounds(ref) {
-  // Returns {start: Date (Sat), end: Date (Thu)} for the most recent completed week
   const d = ref || new Date();
-  // Day of week: 0=Sun,1=Mon,...,6=Sat
-  let day = d.getDay();
-  // Days since last Saturday (Sat=6)
-  let daysSinceSat = (day + 1) % 7; // Sun=1,Mon=2,...,Sat=0
-  let sat = new Date(d);
+  const day = d.getDay();
+  const daysSinceSat = (day + 1) % 7;
+  const sat = new Date(d);
   sat.setDate(d.getDate() - daysSinceSat);
   sat.setHours(0, 0, 0, 0);
-  let thu = new Date(sat);
+  const thu = new Date(sat);
   thu.setDate(sat.getDate() + 5);
   thu.setHours(23, 59, 59, 999);
   return { start: sat, end: thu };
@@ -578,15 +852,14 @@ function last12Weeks() {
   for (let i = 0; i < 12; i++) {
     const ref = new Date(now);
     ref.setDate(now.getDate() - i * 7);
-    const w = getWeekBounds(ref);
-    weeks.push(w);
+    weeks.push(getWeekBounds(ref));
   }
   return weeks;
 }
 
-function fmtDate(d, short = false) {
-  // short format: no zero-padding (e.g. "21/3" not "21/03") to match hardcoded week labels
-  if (short) return `${d.getDate()}/${d.getMonth() + 1}`;
+function fmtDate(d, short) {
+  // short: no zero-padding (e.g. "21/3" not "21/03") — must match hardcoded week labels
+  if (short) return d.getDate() + '/' + (d.getMonth() + 1);
   return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
 }
 
@@ -597,7 +870,7 @@ function fmtDateTime(iso) {
 }
 
 // ═══════════════════════════════════════════
-// INIT
+// INIT (admin)
 // ═══════════════════════════════════════════
 function initDashboard() {
   initTab1();
@@ -606,56 +879,48 @@ function initDashboard() {
 }
 
 // ═══════════════════════════════════════════
-// TAB 1 — Weekly Reviews Input
+// TAB 1 \u2014 Weekly Reviews Input
 // ═══════════════════════════════════════════
-
-// Hardcoded historical weeks + current auto-calculated week
 function buildTab1Weeks() {
   const hardcoded = [
-    { label: "Week 1 — Sat 21/3 \u2013 Thu 26/3", week: "Sat 21/3 \u2013 Thu 26/3" },
-    { label: "Week 2 — Sat 28/3 \u2013 Thu 2/4",  week: "Sat 28/3 \u2013 Thu 2/4"  },
-    { label: "Week 3 — Sat 4/4 \u2013 Thu 9/4",   week: "Sat 4/4 \u2013 Thu 9/4"   },
+    { label: "Week 1 \u2014 Sat 21/3 \u2013 Thu 26/3", week: "Sat 21/3 \u2013 Thu 26/3" },
+    { label: "Week 2 \u2014 Sat 28/3 \u2013 Thu 2/4",  week: "Sat 28/3 \u2013 Thu 2/4"  },
+    { label: "Week 3 \u2014 Sat 4/4 \u2013 Thu 9/4",   week: "Sat 4/4 \u2013 Thu 9/4"   }
   ];
-
-  // Current week = most recent completed Sat-Thu window
   const current = getWeekBounds();
-  const curShort = `Sat ${fmtDate(current.start, true)} \u2013 Thu ${fmtDate(current.end, true)}`;
-
-  // Avoid duplicating if current matches a hardcoded week
-  const isDup = hardcoded.some(h => h.week === curShort);
-  const currentEntry = { label: `Current Week \u2014 ${curShort}`, week: curShort, isCurrent: true };
-
+  const curShort = "Sat " + fmtDate(current.start, true) + " \u2013 Thu " + fmtDate(current.end, true);
+  const isDup = hardcoded.some(function(h) { return h.week === curShort; });
+  const currentEntry = { label: "Current Week \u2014 " + curShort, week: curShort, isCurrent: true };
   return isDup
-    ? [...hardcoded.map(h => h.week === curShort ? { ...h, label: `Current Week \u2014 ${h.week}`, isCurrent: true } : h)]
-    : [...hardcoded, currentEntry];
+    ? hardcoded.map(function(h) {
+        return h.week === curShort ? Object.assign({}, h, { label: "Current Week \u2014 " + h.week, isCurrent: true }) : h;
+      })
+    : hardcoded.concat([currentEntry]);
 }
 
 function initTab1() {
   const weeks = buildTab1Weeks();
   const sel = document.getElementById('tab1-week-select');
   sel.innerHTML = '';
-  weeks.forEach((w, i) => {
+  weeks.forEach(function(w, i) {
     const opt = document.createElement('option');
     opt.value = i;
     opt.textContent = w.label;
     if (w.isCurrent) opt.selected = true;
     sel.appendChild(opt);
   });
-
-  // Set display to selected week
-  const selected = weeks.find(w => w.isCurrent) || weeks[weeks.length - 1];
+  const selected = weeks.find(function(w) { return w.isCurrent; }) || weeks[weeks.length - 1];
   document.getElementById('week-display').textContent = selected.week;
 
   const tbody = document.getElementById('reviews-tbody');
   tbody.innerHTML = '';
-  CONFIG.CLIENTS.forEach((client, i) => {
+  CONFIG.CLIENTS.forEach(function(client, i) {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="num">${i + 1}</td>
-      <td>${escHtml(client.name)}</td>
-      <td><input type="number" class="review-input" id="rev-${i}" min="0" placeholder="0" /></td>
-      <td class="status-cell" id="rev-status-${i}"></td>
-    `;
+    tr.innerHTML =
+      '<td class="num">' + (i + 1) + '</td>' +
+      '<td>' + escHtml(client.name) + '</td>' +
+      '<td><input type="number" class="review-input" id="rev-' + i + '" min="0" placeholder="0" /></td>' +
+      '<td class="status-cell" id="rev-status-' + i + '"></td>';
     tbody.appendChild(tr);
   });
 }
@@ -674,72 +939,70 @@ function getSelectedWeekLabel() {
 
 async function submitAllReviews() {
   if (!CONFIG.APPS_SCRIPT_URL) {
-    alert('Please configure APPS_SCRIPT_URL in the CONFIG section at the top of this file.');
+    alert('Please configure APPS_SCRIPT_URL in the CONFIG section.');
     return;
   }
   const btn = document.getElementById('submit-all-btn');
   const summary = document.getElementById('submit-summary');
   btn.disabled = true;
-  btn.textContent = 'Submitting...';
+  btn.textContent = 'Submitting\u2026';
   summary.textContent = '';
 
   const weekLabel = getSelectedWeekLabel();
   let ok = 0, total = 0;
-  const promises = CONFIG.CLIENTS.map(async (client, i) => {
-    const input = document.getElementById(`rev-${i}`);
+  const promises = CONFIG.CLIENTS.map(async function(client, i) {
+    const input = document.getElementById('rev-' + i);
     const val = parseInt(input.value, 10);
     if (!val || val <= 0) return;
     if (client.sheet_id === 'SHEET_ID') {
-      document.getElementById(`rev-status-${i}`).textContent = '\u26a0\ufe0f';
+      document.getElementById('rev-status-' + i).textContent = '\u26A0\uFE0F';
       return;
     }
     total++;
-    const statusEl = document.getElementById(`rev-status-${i}`);
+    const statusEl = document.getElementById('rev-status-' + i);
     statusEl.innerHTML = '<span class="spinner"></span>';
     try {
       const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
         method: 'POST',
-        // Payload: {sheet_id, value, week: "Sat 21/3 – Thu 26/3"}
         body: JSON.stringify({ sheet_id: client.sheet_id, value: val, week: weekLabel }),
         headers: { 'Content-Type': 'application/json' }
       });
       const data = await resp.json();
-      if (data.success) { ok++; statusEl.textContent = '\u2705'; }
-      else { statusEl.textContent = '\u274c'; }
-    } catch {
-      statusEl.textContent = '\u274c';
+      if (data.success) { ok++; statusEl.innerHTML = '<span class="pill pill-green">\u2705 Submitted</span>'; }
+      else { statusEl.innerHTML = '<span class="pill pill-red">\u274C Failed</span>'; }
+    } catch (e) {
+      statusEl.innerHTML = '<span class="pill pill-red">\u274C Error</span>';
     }
   });
 
   await Promise.all(promises);
-
   btn.disabled = false;
   btn.textContent = 'Submit All';
   if (total === 0) {
     summary.textContent = 'No values entered.';
     summary.className = 'summary-msg';
   } else {
-    summary.textContent = `${ok}/${total} submitted successfully`;
+    summary.textContent = ok + '/' + total + ' submitted successfully';
     summary.className = ok === total ? 'summary-msg ok' : 'summary-msg err';
   }
 }
 
 async function confirmAllWeeks() {
   if (!CONFIG.APPS_SCRIPT_URL) {
-    alert('Please configure APPS_SCRIPT_URL in the CONFIG section at the top of this file.');
+    alert('Please configure APPS_SCRIPT_URL in the CONFIG section.');
     return;
   }
   const btn = document.getElementById('confirm-all-btn');
   const summary = document.getElementById('submit-summary');
   btn.disabled = true;
-  btn.textContent = 'Confirming...';
+  btn.textContent = 'Confirming\u2026';
   summary.textContent = '';
 
   let ok = 0, total = 0;
-  const promises = CONFIG.CLIENTS.map(async (client, i) => {
+  const promises = CONFIG.CLIENTS.map(async function(client, i) {
     if (client.sheet_id === 'SHEET_ID') return;
     total++;
-    const statusEl = document.getElementById(`rev-status-${i}`);
+    const statusEl = document.getElementById('rev-status-' + i);
     statusEl.innerHTML = '<span class="spinner"></span>';
     try {
       const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
@@ -748,37 +1011,35 @@ async function confirmAllWeeks() {
         headers: { 'Content-Type': 'application/json' }
       });
       const data = await resp.json();
-      if (data.success) { ok++; statusEl.textContent = '\u2705'; }
-      else { statusEl.textContent = '\u274c'; }
-    } catch {
-      statusEl.textContent = '\u274c';
+      if (data.success) { ok++; statusEl.innerHTML = '<span class="pill pill-green">\u2705 Confirmed</span>'; }
+      else { statusEl.innerHTML = '<span class="pill pill-red">\u274C Failed</span>'; }
+    } catch (e) {
+      statusEl.innerHTML = '<span class="pill pill-red">\u274C Error</span>';
     }
   });
 
   await Promise.all(promises);
-
   btn.disabled = false;
   btn.textContent = '\u2705 Confirm All Weeks';
-  summary.textContent = `${ok}/${total} confirmed`;
+  summary.textContent = ok + '/' + total + ' confirmed';
   summary.className = ok === total ? 'summary-msg ok' : 'summary-msg err';
 }
 
 // ═══════════════════════════════════════════
-// TAB 2 — Notes History
+// TAB 2 \u2014 Notes History
 // ═══════════════════════════════════════════
 function initTab2() {
   const weekSel = document.getElementById('week-select');
   weekSel.innerHTML = '';
-  last12Weeks().forEach((w, i) => {
+  last12Weeks().forEach(function(w, i) {
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = `Sat ${fmtDate(w.start, true)} — Thu ${fmtDate(w.end, true)}`;
+    opt.textContent = "Sat " + fmtDate(w.start, true) + " \u2014 Thu " + fmtDate(w.end, true);
     weekSel.appendChild(opt);
   });
-
   const clientFilter = document.getElementById('client-filter');
   clientFilter.innerHTML = '<option value="">All Clients</option>';
-  CONFIG.CLIENTS.forEach(c => {
+  CONFIG.CLIENTS.forEach(function(c) {
     const opt = document.createElement('option');
     opt.value = c.contact_id;
     opt.textContent = c.name;
@@ -791,64 +1052,58 @@ async function loadNotes() {
   const clientFilter = document.getElementById('client-filter').value;
   const weeks = last12Weeks();
   const week = weeks[weekIdx];
-
   const tbody = document.getElementById('notes-tbody');
-  tbody.innerHTML = `<tr><td colspan="3" class="loading-row"><span class="spinner"></span> Loading notes...</td></tr>`;
+  tbody.innerHTML = '<tr><td colspan="3" class="loading-row"><span class="spinner"></span> Loading notes\u2026</td></tr>';
 
   const headers = {
-    'Authorization': `Bearer ${CONFIG.THREEUP_API_KEY}`,
+    'Authorization': 'Bearer ' + CONFIG.THREEUP_API_KEY,
     'Version': '2021-07-28'
   };
 
   const clients = clientFilter
-    ? CONFIG.CLIENTS.filter(c => c.contact_id === clientFilter)
+    ? CONFIG.CLIENTS.filter(function(c) { return c.contact_id === clientFilter; })
     : CONFIG.CLIENTS;
 
   const allNotes = [];
-
-  await Promise.all(clients.map(async client => {
+  await Promise.all(clients.map(async function(client) {
     try {
-      const resp = await fetch(`${GHL_BASE}/contacts/${client.contact_id}/notes`, { headers });
+      const resp = await fetch(GHL_BASE + '/contacts/' + client.contact_id + '/notes', { headers: headers });
       if (!resp.ok) return;
       const data = await resp.json();
-      const notes = data.notes || [];
-      notes.forEach(note => {
+      (data.notes || []).forEach(function(note) {
         const d = new Date(note.dateAdded);
         if (d >= week.start && d <= week.end) {
           allNotes.push({ client: client.name, date: note.dateAdded, body: note.body || '' });
         }
       });
-    } catch { /* skip */ }
+    } catch (e) { /* skip */ }
   }));
 
-  allNotes.sort((a, b) => new Date(b.date) - new Date(a.date));
-
+  allNotes.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
   tbody.innerHTML = '';
   if (allNotes.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" class="loading-row">No notes found for this week</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="3" class="loading-row">No notes found for this week</td></tr>';
     return;
   }
-
-  allNotes.forEach((note, i) => {
-    const preview = note.body.replace(/\n/g, ' ').slice(0, 100) + (note.body.length > 100 ? '…' : '');
+  allNotes.forEach(function(note, i) {
+    const preview = note.body.replace(/\n/g, ' ').slice(0, 100) + (note.body.length > 100 ? '\u2026' : '');
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${escHtml(note.client)}</td>
-      <td style="white-space:nowrap;color:var(--muted);font-size:13px">${fmtDateTime(note.date)}</td>
-      <td>
-        <div class="note-preview">${escHtml(preview)}</div>
-        ${note.body.length > 100 ? `
-          <button class="note-expand-btn" onclick="toggleNote(${i})">Show full note</button>
-          <pre class="note-full" id="note-full-${i}">${escHtml(note.body)}</pre>
-        ` : ''}
-      </td>
-    `;
+    tr.innerHTML =
+      '<td>' + escHtml(note.client) + '</td>' +
+      '<td style="white-space:nowrap;color:var(--muted);font-size:13px">' + fmtDateTime(note.date) + '</td>' +
+      '<td>' +
+        '<div class="note-preview">' + escHtml(preview) + '</div>' +
+        (note.body.length > 100
+          ? '<button class="note-expand-btn" onclick="toggleNote(' + i + ')">Show full note</button>' +
+            '<pre class="note-full" id="note-full-' + i + '">' + escHtml(note.body) + '</pre>'
+          : '') +
+      '</td>';
     tbody.appendChild(tr);
   });
 }
 
 function toggleNote(i) {
-  const el = document.getElementById(`note-full-${i}`);
+  const el = document.getElementById('note-full-' + i);
   const btn = el.previousElementSibling;
   if (el.style.display === 'block') {
     el.style.display = 'none';
@@ -860,84 +1115,187 @@ function toggleNote(i) {
 }
 
 // ═══════════════════════════════════════════
-// TAB 3 — Client Status
+// TAB 3 \u2014 Client Status
 // ═══════════════════════════════════════════
 function initTab3() {
   const grid = document.getElementById('status-grid');
   grid.innerHTML = '';
-  CONFIG.CLIENTS.forEach(client => {
+  CONFIG.CLIENTS.forEach(function(client) {
     const card = document.createElement('div');
     card.className = 'client-card';
-    card.id = `card-${client.contact_id}`;
-    card.innerHTML = `
-      <div class="card-name">${escHtml(client.name)}</div>
-      <div class="card-loading" style="color:var(--muted);font-size:13px">Click Refresh to load</div>
-    `;
+    card.id = 'card-' + client.contact_id;
+    card.innerHTML =
+      '<div class="card-name">' + escHtml(client.name) + '</div>' +
+      '<div class="card-loading">Click Refresh to load</div>';
     grid.appendChild(card);
   });
 }
 
 async function loadClientStatus() {
   const summary = document.getElementById('status-summary');
-  summary.textContent = 'Loading...';
-
+  summary.textContent = 'Loading\u2026';
   const headers = {
-    'Authorization': `Bearer ${CONFIG.THREEUP_API_KEY}`,
+    'Authorization': 'Bearer ' + CONFIG.THREEUP_API_KEY,
     'Version': '2021-07-28'
   };
-
   let loaded = 0;
-
-  await Promise.all(CONFIG.CLIENTS.map(async client => {
-    const card = document.getElementById(`card-${client.contact_id}`);
-    card.innerHTML = `
-      <div class="card-name">${escHtml(client.name)}</div>
-      <div class="card-loading"><span class="spinner"></span></div>
-    `;
+  await Promise.all(CONFIG.CLIENTS.map(async function(client) {
+    const card = document.getElementById('card-' + client.contact_id);
+    card.innerHTML =
+      '<div class="card-name">' + escHtml(client.name) + '</div>' +
+      '<div class="card-loading"><span class="spinner"></span></div>';
     try {
-      // Fetch contact for counter
       const [contactResp, notesResp] = await Promise.all([
-        fetch(`${GHL_BASE}/contacts/${client.contact_id}`, { headers }),
-        fetch(`${GHL_BASE}/contacts/${client.contact_id}/notes?limit=1`, { headers })
+        fetch(GHL_BASE + '/contacts/' + client.contact_id, { headers: headers }),
+        fetch(GHL_BASE + '/contacts/' + client.contact_id + '/notes?limit=1', { headers: headers })
       ]);
-
       let counterVal = 0;
       if (contactResp.ok) {
         const data = await contactResp.json();
-        const fields = data.contact?.customFields || [];
-        const field = fields.find(f => f.id === CONFIG.COUNTER_FIELD_ID);
+        const fields = (data.contact && data.contact.customFields) ? data.contact.customFields : [];
+        const field = fields.find(function(f) { return f.id === CONFIG.COUNTER_FIELD_ID; });
         counterVal = field ? (parseInt(field.value, 10) || 0) : 0;
       }
-
       let lastNoteDate = null;
       if (notesResp.ok) {
         const ndata = await notesResp.json();
         const notes = ndata.notes || [];
         if (notes.length > 0) {
-          const sorted = notes.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+          const sorted = notes.sort(function(a, b) { return new Date(b.dateAdded) - new Date(a.dateAdded); });
           lastNoteDate = sorted[0].dateAdded;
         }
       }
-
-      const emoji = counterVal === 0 ? '🟢' : counterVal === 1 ? '🟡' : counterVal === 2 ? '🟠' : '🔴';
+      const emoji = counterVal === 0 ? '\uD83D\uDFE2' : counterVal === 1 ? '\uD83D\uDFE1' : counterVal === 2 ? '\uD83D\uDFE0' : '\uD83D\uDD34';
       const color = counterVal === 0 ? 'var(--green)' : counterVal === 1 ? 'var(--yellow)' : counterVal === 2 ? 'var(--orange)' : 'var(--red)';
-
-      card.innerHTML = `
-        <div class="card-name">${escHtml(client.name)}</div>
-        <div class="card-counter-label">Bad Report Counter</div>
-        <div class="card-counter" style="color:${color}">${emoji} <span>${counterVal}</span></div>
-        <div class="card-last-note">${lastNoteDate ? 'Last note: ' + fmtDateTime(lastNoteDate) : 'No notes found'}</div>
-      `;
+      card.innerHTML =
+        '<div class="card-name">' + escHtml(client.name) + '</div>' +
+        '<div class="card-counter-label">Bad Report Counter</div>' +
+        '<div class="card-counter" style="color:' + color + '">' + emoji + ' <span>' + counterVal + '</span></div>' +
+        '<div class="card-last-note">' + (lastNoteDate ? 'Last note: ' + fmtDateTime(lastNoteDate) : 'No notes found') + '</div>';
       loaded++;
-    } catch {
-      card.innerHTML = `
-        <div class="card-name">${escHtml(client.name)}</div>
-        <div style="color:var(--red);font-size:13px">Failed to load</div>
-      `;
+    } catch (e) {
+      card.innerHTML =
+        '<div class="card-name">' + escHtml(client.name) + '</div>' +
+        '<div style="color:var(--red);font-size:13px">Failed to load</div>';
     }
   }));
+  summary.textContent = loaded + '/' + CONFIG.CLIENTS.length + ' clients loaded';
+}
 
-  summary.textContent = `${loaded}/${CONFIG.CLIENTS.length} clients loaded`;
+// ═══════════════════════════════════════════
+// CLIENT PORTAL \u2014 Performance Report
+// ═══════════════════════════════════════════
+async function loadClientReport(client) {
+  const tbody = document.getElementById('client-report-tbody');
+  const banner = document.getElementById('client-status-banner');
+
+  try {
+    const url = CONFIG.APPS_SCRIPT_URL + '?sheet_id=' + encodeURIComponent(client.sheet_id);
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    if (data.error || !Array.isArray(data.rows)) {
+      tbody.innerHTML = '<tr><td colspan="6" class="loading-row">No data available yet \u2014 check back after the weekly report runs.</td></tr>';
+      banner.innerHTML =
+        '<span class="client-status-emoji">\u23F3</span>' +
+        '<div><div class="client-status-label">No data yet</div>' +
+        '<div class="client-status-text">Data will appear after the first weekly report</div></div>';
+      return;
+    }
+
+    const rows = data.rows.filter(function(r) { return r[0] && String(r[0]).trim() !== ''; });
+
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="loading-row">No weekly data found yet.</td></tr>';
+      banner.innerHTML =
+        '<span class="client-status-emoji">\u23F3</span>' +
+        '<div><div class="client-status-label">No data yet</div>' +
+        '<div class="client-status-text">Data will appear after the first weekly report</div></div>';
+      return;
+    }
+
+    // Compute overall strike count (consecutive bad rows from most recent)
+    let strikeCount = 0;
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const row = rows[i];
+      const hook   = String(row[10] !== undefined ? row[10] : '').trim().toUpperCase();
+      const offer  = String(row[11] !== undefined ? row[11] : '').trim().toUpperCase();
+      const cancel = String(row[16] !== undefined ? row[16] : '').trim().toUpperCase();
+      if (hook === 'TRUE' || offer === 'TRUE' || cancel === 'TRUE') {
+        strikeCount++;
+      } else {
+        break;
+      }
+    }
+
+    // Status banner
+    var si;
+    if      (strikeCount === 0) si = { emoji:'\uD83D\uDFE2', label:'Healthy',                    text:'All metrics are on track',                                     color:'var(--green)'  };
+    else if (strikeCount === 1) si = { emoji:'\uD83D\uDFE1', label:'Strike 1 \u2014 Monitoring', text:'One consecutive bad week \u2014 being monitored',              color:'var(--yellow)' };
+    else if (strikeCount === 2) si = { emoji:'\uD83D\uDFE0', label:'Strike 2 \u2014 Action Required', text:'Two consecutive bad weeks \u2014 review recommended',     color:'var(--orange)' };
+    else                        si = { emoji:'\uD83D\uDD34', label:'Strike ' + strikeCount + ' \u2014 Escalated', text:'Multiple consecutive bad weeks \u2014 immediate attention needed', color:'var(--red)' };
+
+    banner.innerHTML =
+      '<span class="client-status-emoji">' + si.emoji + '</span>' +
+      '<div>' +
+        '<div class="client-status-label" style="color:' + si.color + '">' + si.label + '</div>' +
+        '<div class="client-status-text">' + si.text + '</div>' +
+      '</div>';
+
+    // Build weekly rows
+    tbody.innerHTML = '';
+    rows.forEach(function(row) {
+      const weekLabel  = escHtml(String(row[0] || '\u2014'));
+      const reviews    = (row[1] !== '' && row[1] !== null && row[1] !== undefined) ? row[1] : '\u2014';
+      const hookFlag   = String(row[10] !== undefined ? row[10] : '').trim().toUpperCase();
+      const offerFlag  = String(row[11] !== undefined ? row[11] : '').trim().toUpperCase();
+      const cancelRate = (row[15] !== '' && row[15] !== null && row[15] !== undefined) ? parseFloat(row[15]) : null;
+      const cancelFlag = String(row[16] !== undefined ? row[16] : '').trim().toUpperCase();
+
+      const hookBad   = hookFlag   === 'TRUE';
+      const offerBad  = offerFlag  === 'TRUE';
+      const cancelBad = cancelFlag === 'TRUE';
+      const rowBad    = hookBad || offerBad || cancelBad;
+
+      const hookCell  = hookFlag  === '' ? '<span class="pill pill-gray">\u2014</span>'
+                      : hookBad           ? '<span class="pill pill-red">\u274C Flagged</span>'
+                      :                     '<span class="pill pill-green">\u2705 Good</span>';
+      const offerCell = offerFlag === '' ? '<span class="pill pill-gray">\u2014</span>'
+                      : offerBad          ? '<span class="pill pill-red">\u274C Flagged</span>'
+                      :                     '<span class="pill pill-green">\u2705 Good</span>';
+
+      var cancelCell;
+      if (cancelRate === null || isNaN(cancelRate)) {
+        cancelCell = '<span class="pill pill-gray">\u2014</span>';
+      } else {
+        const pct = (cancelRate * 100).toFixed(1) + '%';
+        cancelCell = cancelBad
+          ? '<span class="pill pill-red">\u274C ' + pct + '</span>'
+          : '<span class="pill pill-green">\u2705 ' + pct + '</span>';
+      }
+
+      const rowStatus = rowBad
+        ? '<span class="pill pill-red">\u26A0\uFE0F Bad Week</span>'
+        : '<span class="pill pill-green">\u2705 Good Week</span>';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td style="font-weight:500;white-space:nowrap">' + weekLabel + '</td>' +
+        '<td>' + reviews + '</td>' +
+        '<td>' + hookCell + '</td>' +
+        '<td>' + offerCell + '</td>' +
+        '<td>' + cancelCell + '</td>' +
+        '<td>' + rowStatus + '</td>';
+      tbody.appendChild(tr);
+    });
+
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="6" class="loading-row">Failed to load data. Please try again later.</td></tr>';
+    banner.innerHTML =
+      '<span class="client-status-emoji">\u26A0\uFE0F</span>' +
+      '<div><div class="client-status-label">Load error</div>' +
+      '<div class="client-status-text">' + escHtml(String(err)) + '</div></div>';
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -954,9 +1312,18 @@ function escHtml(str) {
 // ═══════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════
-if (sessionStorage.getItem('cao_auth') === '1') {
-  showDashboard();
-}
+(function boot() {
+  const sess = sessionStorage.getItem('cao_session');
+  if (!sess) return;
+  if (sess.startsWith('admin:')) {
+    showAdminDashboard(sess.slice(6) || 'admin');
+  } else if (sess.startsWith('client:')) {
+    const idx = parseInt(sess.slice(7), 10);
+    if (!isNaN(idx) && idx >= 0 && idx < CONFIG.CLIENTS.length) {
+      showClientDashboard(idx);
+    }
+  }
+})();
 </script>
 </body>
 </html>

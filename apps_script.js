@@ -66,6 +66,32 @@ function doPost(e) {
 }
 
 function doGet(e) {
+  // If sheet_id param provided, return all data rows for the client portal
+  const sheetId = e.parameter && e.parameter.sheet_id;
+  if (sheetId) {
+    try {
+      const ss      = SpreadsheetApp.openById(sheetId);
+      const sheet   = ss.getSheets()[0];
+      const lastRow = sheet.getLastRow();
+      if (lastRow < 2) {
+        return ContentService
+          .createTextOutput(JSON.stringify({rows: []}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      // Read up to 30 columns, skip header row (row 1)
+      const raw  = sheet.getRange(2, 1, lastRow - 1, 30).getValues();
+      const rows = raw.filter(function(r) { return r[0] !== ''; });
+      return ContentService
+        .createTextOutput(JSON.stringify({rows: rows}))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch(err) {
+      return ContentService
+        .createTextOutput(JSON.stringify({error: err.toString()}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // Default status response
   return ContentService
     .createTextOutput(JSON.stringify({status: "ThreeUp CAO Apps Script running"}))
     .setMimeType(ContentService.MimeType.JSON);
