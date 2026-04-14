@@ -902,9 +902,9 @@ function initTab1() {
   const weeks = buildTab1Weeks();
   const sel = document.getElementById('tab1-week-select');
   sel.innerHTML = '';
-  weeks.forEach(function(w, i) {
+  weeks.forEach(function(w) {
     const opt = document.createElement('option');
-    opt.value = i;
+    opt.value = w.week;
     opt.textContent = w.label;
     if (w.isCurrent) opt.selected = true;
     sel.appendChild(opt);
@@ -926,15 +926,11 @@ function initTab1() {
 }
 
 function onTab1WeekChange() {
-  const weeks = buildTab1Weeks();
-  const idx = parseInt(document.getElementById('tab1-week-select').value, 10);
-  document.getElementById('week-display').textContent = weeks[idx].week;
+  document.getElementById('week-display').textContent = document.getElementById('tab1-week-select').value;
 }
 
 function getSelectedWeekLabel() {
-  const weeks = buildTab1Weeks();
-  const idx = parseInt(document.getElementById('tab1-week-select').value, 10);
-  return weeks[idx].week;
+  return document.getElementById('tab1-week-select').value;
 }
 
 async function submitAllReviews() {
