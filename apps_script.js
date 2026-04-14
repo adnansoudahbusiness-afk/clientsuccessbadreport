@@ -10,27 +10,53 @@ function doPost(e) {
     const sheet   = ss.getSheets()[0];
     const lastRow = sheet.getLastRow();
 
+    Logger.log('doPost received — action: ' + action + ', week: "' + week + '", value: ' + value);
+
     if (lastRow < 2) {
+      Logger.log('Sheet has no data rows');
       return ContentService
-        .createTextOutput(JSON.stringify({success: false, error: "No data rows found — run agent first"}))
+        .createTextOutput(JSON.stringify({success: false, error: "No data rows found — run agent first", week: week, action: action}))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
     let targetRow = -1;
 
-    // 1. If a week label is provided, find the matching row by column A (Date Range)
+    // 1. If a week label is provided, find the matching row by column A (case-insensitive, trimmed)
     if (week) {
+      const weekNorm = week.toLowerCase().replace(/\s+/g, ' ');
       const colA = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+      Logger.log('Scanning ' + colA.length + ' rows for week match');
       for (let i = 0; i < colA.length; i++) {
-        if (String(colA[i][0]).trim() === week) {
-          targetRow = i + 2;  // 1-indexed, offset by header row
+        const cellVal  = String(colA[i][0]).trim();
+        const cellNorm = cellVal.toLowerCase().replace(/\s+/g, ' ');
+        Logger.log('Row ' + (i + 2) + ' col A: "' + cellVal + '"');
+        if (cellNorm === weekNorm) {
+          targetRow = i + 2; // 1-indexed, offset by header row
+          Logger.log('Match found at row ' + targetRow);
           break;
         }
       }
+      if (targetRow === -1) {
+        Logger.log('No match found for week: "' + week + '"');
+      }
     }
 
-    // 2. Fallback: use the last row that has data in column A
+    // 2. Fallback for submit: append a new row if no week match found
+    //    For confirm: no match is an error — we must not write YES to the wrong row
     if (targetRow === -1) {
+      if (action === 'confirm') {
+        Logger.log('Confirm failed — no matching row for week: "' + week + '"');
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            error: 'No row found matching week: "' + week + '"',
+            week: week,
+            action: action
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+
+      // submit: fallback to last row with data in column A
       const colA = sheet.getRange(1, 1, lastRow, 1).getValues();
       for (let i = colA.length - 1; i >= 0; i--) {
         if (colA[i][0] !== '') {
@@ -38,27 +64,41 @@ function doPost(e) {
           break;
         }
       }
+      Logger.log('Submit fallback — using last data row: ' + targetRow);
     }
 
     if (targetRow <= 1) {
       return ContentService
-        .createTextOutput(JSON.stringify({success: false, error: "No data row found — run agent first"}))
+        .createTextOutput(JSON.stringify({
+          success: false,
+          error: 'No data row found — run agent first',
+          week: week,
+          action: action
+        }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
     if (action === 'confirm') {
       // Write "YES" to column C (CONFIRM)
       sheet.getRange(targetRow, 3).setValue(value);
+      Logger.log('Wrote "' + value + '" to row ' + targetRow + ' col C (CONFIRM)');
     } else {
       // action == 'submit': write Google Reviews count to column B
       sheet.getRange(targetRow, 2).setValue(value);
+      Logger.log('Wrote ' + value + ' to row ' + targetRow + ' col B (Google Reviews)');
     }
 
     return ContentService
-      .createTextOutput(JSON.stringify({success: true, row: targetRow, action: action, week: week || 'last'}))
+      .createTextOutput(JSON.stringify({
+        success: true,
+        row: targetRow,
+        action: action,
+        week: week || 'last'
+      }))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch(err) {
+    Logger.log('doPost exception: ' + err.toString());
     return ContentService
       .createTextOutput(JSON.stringify({success: false, error: err.toString()}))
       .setMimeType(ContentService.MimeType.JSON);
