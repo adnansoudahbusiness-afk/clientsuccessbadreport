@@ -585,9 +585,8 @@ function last12Weeks() {
 }
 
 function fmtDate(d, short = false) {
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  if (short) return `${dd}/${mm}`;
+  // short format: no zero-padding (e.g. "21/3" not "21/03") to match hardcoded week labels
+  if (short) return `${d.getDate()}/${d.getMonth() + 1}`;
   return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
 }
 
