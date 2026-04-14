@@ -456,43 +456,79 @@
     .card-loading { color: var(--muted); font-size: 13px; }
 
     /* ══════════════════ CLIENT PORTAL ══════════════════ */
-    #client-dashboard { display: none; flex-direction: column; min-height: 100vh; }
+    @keyframes meshGradient {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(34,197,94,.4); }
+      70%  { box-shadow: 0 0 0 10px rgba(34,197,94,0); }
+      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    }
+    @keyframes fillBar {
+      from { width: 0%; }
+      to   { width: var(--target-width, 0%); }
+    }
+
+    #client-dashboard {
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f8f6ff 0%, #ede9ff 25%, #f0f4ff 50%, #e8f4f8 75%, #f5f0ff 100%);
+      background-size: 400% 400%;
+      animation: meshGradient 12s ease infinite;
+    }
 
     .client-nav {
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(168,153,219,.2);
       display: flex;
       align-items: center;
       padding: 0 28px;
       height: 60px;
-      box-shadow: var(--shadow);
+      box-shadow: 0 2px 16px rgba(168,153,219,.12);
       position: sticky;
       top: 0;
       z-index: 100;
     }
     .client-nav-brand {
+      display: flex;
+      align-items: center;
       font-size: 15px;
       font-weight: 700;
-      color: var(--blue);
+      color: #7c6db5;
       margin-right: auto;
       letter-spacing: -0.3px;
+    }
+    .client-nav-logo {
+      height: 32px;
+      margin-right: 10px;
+      border-radius: 6px;
+      object-fit: contain;
     }
     .client-nav-right { display: flex; align-items: center; gap: 10px; }
 
     .client-content { padding: 36px 28px; max-width: 1000px; margin: 0 auto; width: 100%; }
 
     .client-welcome {
-      background: linear-gradient(135deg, var(--blue-lt) 0%, #f5f3ff 100%);
-      border: 1px solid #c7d7fd;
-      border-radius: 16px;
-      padding: 28px 32px;
+      background: linear-gradient(135deg, #f0ecff 0%, #ede9ff 60%, #e8e4f8 100%);
+      border: 1px solid rgba(168,153,219,.3);
+      border-radius: 20px;
+      padding: 32px 36px;
       margin-bottom: 32px;
+      box-shadow: 0 4px 24px rgba(168,153,219,.15);
     }
     .client-welcome h1 {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 700;
-      color: var(--text);
       margin-bottom: 6px;
+      background: linear-gradient(135deg, #7c6db5, #A899DB);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     .client-welcome p { font-size: 14px; color: var(--muted); }
 
@@ -501,24 +537,79 @@
       align-items: center;
       gap: 12px;
       margin-top: 18px;
-      background: var(--bg2);
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 20px;
-      box-shadow: var(--shadow);
+      background: rgba(255,255,255,.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(168,153,219,.25);
+      border-radius: 14px;
+      padding: 14px 22px;
+      box-shadow: 0 4px 16px rgba(168,153,219,.15);
     }
     .client-status-emoji { font-size: 28px; line-height: 1; }
     .client-status-label { font-size: 15px; font-weight: 700; color: var(--text); }
     .client-status-text  { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
+    .pulse-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
     .section-title {
       font-size: 15px;
       font-weight: 700;
-      color: var(--text);
+      color: #7c6db5;
       margin-bottom: 14px;
       padding-bottom: 10px;
-      border-bottom: 2px solid var(--border);
+      border-bottom: 2px solid rgba(168,153,219,.3);
     }
+
+    /* Glassmorphism table card */
+    #client-dashboard .table-wrap {
+      background: rgba(255,255,255,.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(168,153,219,.2);
+      box-shadow: 0 8px 32px rgba(168,153,219,.15);
+      border-radius: 16px;
+      transition: transform .3s ease, box-shadow .3s ease;
+    }
+    #client-dashboard .table-wrap:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(168,153,219,.25);
+    }
+
+    /* Table row hover — slide right */
+    #client-dashboard tbody tr {
+      transition: background .2s ease, transform .2s ease;
+    }
+    #client-dashboard tbody tr:hover {
+      background: rgba(168,153,219,.08) !important;
+      transform: translateX(4px);
+    }
+
+    /* Metric progress bars */
+    .metric-bar {
+      height: 3px;
+      background: rgba(0,0,0,.06);
+      border-radius: 2px;
+      margin-top: 5px;
+      overflow: hidden;
+    }
+    .metric-fill {
+      height: 100%;
+      border-radius: 2px;
+      width: 0%;
+      background: linear-gradient(90deg, #A899DB, #7c6db5);
+      transition: width 1s ease;
+    }
+    .metric-fill.fill-bad    { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    .metric-fill.fill-cancel { background: linear-gradient(90deg, #A899DB, #7c6db5); }
 
     @media (max-width: 640px) {
       .nav, .client-nav { padding: 0 14px; }
@@ -640,7 +731,11 @@
 <!-- ═══ CLIENT PORTAL ═══ -->
 <div id="client-dashboard">
   <nav class="client-nav">
-    <div class="client-nav-brand">&#9889; ThreeUp Solutions</div>
+    <div class="client-nav-brand">
+      <img src="https://www.image2url.com/r2/default/images/1776208287133-9ad61d5c-0316-4f0c-811c-f7956b3ee7dd.jpeg"
+           class="client-nav-logo" alt="ThreeUp"
+           onerror="this.style.display='none'" />ThreeUp Solutions
+    </div>
     <div class="client-nav-right">
       <span class="nav-user-badge" id="client-user-badge"></span>
       <button class="btn-logout" onclick="doLogout()">Logout</button>
@@ -1233,10 +1328,11 @@ async function loadClientReport(client) {
     else if (strikeCount === 2) si = { emoji:'\uD83D\uDFE0', label:'Strike 2 \u2014 Action Required', text:'Two consecutive bad weeks \u2014 review recommended',     color:'var(--orange)' };
     else                        si = { emoji:'\uD83D\uDD34', label:'Strike ' + strikeCount + ' \u2014 Escalated', text:'Multiple consecutive bad weeks \u2014 immediate attention needed', color:'var(--red)' };
 
+    const pulseDot = strikeCount === 0 ? '<span class="pulse-dot"></span>' : '';
     banner.innerHTML =
       '<span class="client-status-emoji">' + si.emoji + '</span>' +
       '<div>' +
-        '<div class="client-status-label" style="color:' + si.color + '">' + si.label + '</div>' +
+        '<div class="client-status-label" style="color:' + si.color + '">' + pulseDot + si.label + '</div>' +
         '<div class="client-status-text">' + si.text + '</div>' +
       '</div>';
 
@@ -1255,12 +1351,21 @@ async function loadClientReport(client) {
       const cancelBad = cancelFlag === 'TRUE';
       const rowBad    = hookBad || offerBad || cancelBad;
 
+      // Metric bar widths: hook/offer use representative values (good=78%, bad=38%)
+      const hookBarW   = hookFlag  === '' ? 0 : hookBad  ? 38 : 78;
+      const offerBarW  = offerFlag === '' ? 0 : offerBad ? 38 : 78;
+      const cancelBarW = (cancelRate !== null && !isNaN(cancelRate)) ? Math.min(cancelRate * 100, 100) : 0;
+
+      const hookBar  = hookFlag  === '' ? '' : '<div class="metric-bar"><div class="metric-fill' + (hookBad  ? ' fill-bad' : '') + '" data-target="' + hookBarW  + '"></div></div>';
+      const offerBar = offerFlag === '' ? '' : '<div class="metric-bar"><div class="metric-fill' + (offerBad ? ' fill-bad' : '') + '" data-target="' + offerBarW + '"></div></div>';
+      const cancelBar = cancelBarW > 0    ? '<div class="metric-bar"><div class="metric-fill fill-cancel'  + (cancelBad ? ' fill-bad' : '') + '" data-target="' + cancelBarW.toFixed(1) + '"></div></div>' : '';
+
       const hookCell  = hookFlag  === '' ? '<span class="pill pill-gray">\u2014</span>'
-                      : hookBad           ? '<span class="pill pill-red">\u274C Flagged</span>'
-                      :                     '<span class="pill pill-green">\u2705 Good</span>';
+                      : hookBad           ? '<span class="pill pill-red">\u274C Flagged</span>'  + hookBar
+                      :                     '<span class="pill pill-green">\u2705 Good</span>'   + hookBar;
       const offerCell = offerFlag === '' ? '<span class="pill pill-gray">\u2014</span>'
-                      : offerBad          ? '<span class="pill pill-red">\u274C Flagged</span>'
-                      :                     '<span class="pill pill-green">\u2705 Good</span>';
+                      : offerBad          ? '<span class="pill pill-red">\u274C Flagged</span>'  + offerBar
+                      :                     '<span class="pill pill-green">\u2705 Good</span>'   + offerBar;
 
       var cancelCell;
       if (cancelRate === null || isNaN(cancelRate)) {
@@ -1268,8 +1373,8 @@ async function loadClientReport(client) {
       } else {
         const pct = (cancelRate * 100).toFixed(1) + '%';
         cancelCell = cancelBad
-          ? '<span class="pill pill-red">\u274C ' + pct + '</span>'
-          : '<span class="pill pill-green">\u2705 ' + pct + '</span>';
+          ? '<span class="pill pill-red">\u274C '   + pct + '</span>' + cancelBar
+          : '<span class="pill pill-green">\u2705 ' + pct + '</span>' + cancelBar;
       }
 
       const rowStatus = rowBad
@@ -1285,6 +1390,13 @@ async function loadClientReport(client) {
         '<td>' + cancelCell + '</td>' +
         '<td>' + rowStatus + '</td>';
       tbody.appendChild(tr);
+    });
+
+    // Animate metric bars (trigger CSS transition after paint)
+    requestAnimationFrame(function() {
+      tbody.querySelectorAll('.metric-fill[data-target]').forEach(function(el) {
+        el.style.width = el.getAttribute('data-target') + '%';
+      });
     });
 
   } catch (err) {
