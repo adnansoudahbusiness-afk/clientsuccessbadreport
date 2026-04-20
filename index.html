@@ -619,6 +619,33 @@
       .login-box { padding: 36px 24px; }
       .client-welcome { padding: 22px 20px; }
     }
+    .client-summary-cards {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin: 18px 0 24px;
+    }
+    .client-summary-card {
+      flex: 1;
+      min-width: 140px;
+      background: rgba(255,255,255,.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(168,153,219,.25);
+      border-radius: 14px;
+      padding: 16px 18px;
+      text-align: center;
+    }
+    .client-summary-card-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: #A899DB;
+    }
+    .client-summary-card-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -672,6 +699,7 @@
             <th>#</th>
             <th>Client Name</th>
             <th>Google Reviews</th>
+            <th>Website Patients</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -753,13 +781,16 @@
         </div>
       </div>
     </div>
+    <div class="client-summary-cards" id="client-summary-cards"></div>
     <div class="section-title">Weekly Performance Breakdown</div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
             <th>Week</th>
-            <th>Google Reviews</th>
+            <th>New Reviews</th>
+            <th>Total Reviews</th>
+            <th>Website Patients</th>
             <th>Hook</th>
             <th>Offer</th>
             <th>Cancel Rate</th>
@@ -767,7 +798,7 @@
           </tr>
         </thead>
         <tbody id="client-report-tbody">
-          <tr><td colspan="6" class="loading-row"><span class="spinner"></span> Loading your report&hellip;</td></tr>
+          <tr><td colspan="8" class="loading-row"><span class="spinner"></span> Loading your report&hellip;</td></tr>
         </tbody>
       </table>
     </div>
@@ -1014,6 +1045,7 @@ function initTab1() {
       '<td class="num">' + (i + 1) + '</td>' +
       '<td>' + escHtml(client.name) + '</td>' +
       '<td><input type="number" class="review-input" id="rev-' + i + '" min="0" placeholder="0" /></td>' +
+      '<td><input type="number" class="review-input" id="wp-' + i + '" min="0" placeholder="0" /></td>' +
       '<td class="status-cell" id="rev-status-' + i + '"></td>';
     tbody.appendChild(tr);
   });
@@ -1063,6 +1095,18 @@ async function submitAllReviews() {
       statusEl.innerHTML = '<span class="pill pill-green">\u2705 Submitted</span>';
     } catch (e) {
       statusEl.innerHTML = '<span class="pill pill-red">\u274C Network Error</span>';
+    }
+    // Submit Website Patients if entered
+    const wpInput = document.getElementById('wp-' + i);
+    const wpVal   = parseInt(wpInput ? wpInput.value : '0', 10);
+    if (wpVal > 0 && client.sheet_id !== 'SHEET_ID') {
+      try {
+        await fetch(CONFIG.APPS_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          body: JSON.stringify({ sheet_id: client.sheet_id, value: wpVal, week: weekLabel, action: 'submit_wp' })
+        });
+      } catch (e) { /* non-critical — wp submission failure does not affect reviews status */ }
     }
   });
 
@@ -1287,7 +1331,7 @@ async function loadClientReport(client) {
     const data = await resp.json();
 
     if (data.error || !Array.isArray(data.rows)) {
-      tbody.innerHTML = '<tr><td colspan="6" class="loading-row">No data available yet \u2014 check back after the weekly report runs.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="loading-row">No data available yet \u2014 check back after the weekly report runs.</td></tr>';
       banner.innerHTML =
         '<span class="client-status-emoji">\u23F3</span>' +
         '<div><div class="client-status-label">No data yet</div>' +
@@ -1298,12 +1342,34 @@ async function loadClientReport(client) {
     const rows = data.rows.filter(function(r) { return r[0] && String(r[0]).trim() !== ''; });
 
     if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="loading-row">No weekly data found yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="loading-row">No weekly data found yet.</td></tr>';
       banner.innerHTML =
         '<span class="client-status-emoji">\u23F3</span>' +
         '<div><div class="client-status-label">No data yet</div>' +
         '<div class="client-status-text">Data will appear after the first weekly report</div></div>';
       return;
+    }
+
+    // Summary cards — most recent week (last row)
+    const latestRow       = rows[rows.length - 1];
+    const summaryCards    = document.getElementById('client-summary-cards');
+    if (summaryCards) {
+      const sc_total  = (latestRow[30] !== '' && latestRow[30] !== null && latestRow[30] !== undefined) ? latestRow[30] : '\u2014';
+      const sc_wp     = (latestRow[31] !== '' && latestRow[31] !== null && latestRow[31] !== undefined) ? latestRow[31] : '\u2014';
+      const sc_np     = (latestRow[3]  !== '' && latestRow[3]  !== null && latestRow[3]  !== undefined) ? latestRow[3]  : '\u2014';
+      summaryCards.innerHTML =
+        '<div class="client-summary-card">' +
+          '<div class="client-summary-card-value">' + sc_total + '</div>' +
+          '<div class="client-summary-card-label">Total Google Reviews</div>' +
+        '</div>' +
+        '<div class="client-summary-card">' +
+          '<div class="client-summary-card-value">' + sc_wp + '</div>' +
+          '<div class="client-summary-card-label">Website Patients</div>' +
+        '</div>' +
+        '<div class="client-summary-card">' +
+          '<div class="client-summary-card-value">' + sc_np + '</div>' +
+          '<div class="client-summary-card-label">New Patients This Week</div>' +
+        '</div>';
     }
 
     // Compute overall strike count (consecutive bad rows from most recent)
@@ -1380,10 +1446,15 @@ async function loadClientReport(client) {
         ? '<span class="pill pill-red">\u26A0\uFE0F Bad Week</span>'
         : '<span class="pill pill-green">\u2705 Good Week</span>';
 
+      const totalReviews    = (row[30] !== '' && row[30] !== null && row[30] !== undefined) ? row[30] : '\u2014';
+      const websitePatients = (row[31] !== '' && row[31] !== null && row[31] !== undefined) ? row[31] : '\u2014';
+
       const tr = document.createElement('tr');
       tr.innerHTML =
         '<td style="font-weight:500;white-space:nowrap">' + weekLabel + '</td>' +
         '<td>' + reviews + '</td>' +
+        '<td>' + totalReviews + '</td>' +
+        '<td>' + websitePatients + '</td>' +
         '<td>' + hookCell + '</td>' +
         '<td>' + offerCell + '</td>' +
         '<td>' + cancelCell + '</td>' +
@@ -1399,7 +1470,7 @@ async function loadClientReport(client) {
     });
 
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="6" class="loading-row">Failed to load data. Please try again later.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="loading-row">Failed to load data. Please try again later.</td></tr>';
     banner.innerHTML =
       '<span class="client-status-emoji">\u26A0\uFE0F</span>' +
       '<div><div class="client-status-label">Load error</div>' +

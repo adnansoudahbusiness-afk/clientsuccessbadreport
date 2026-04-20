@@ -82,6 +82,10 @@ function doPost(e) {
       // Write "YES" to column C (CONFIRM)
       sheet.getRange(targetRow, 3).setValue(value);
       Logger.log('Wrote "' + value + '" to row ' + targetRow + ' col C (CONFIRM)');
+    } else if (action === 'submit_wp') {
+      // Write Website Patients to column AF (32)
+      sheet.getRange(targetRow, 32).setValue(value);
+      Logger.log('Wrote ' + value + ' to row ' + targetRow + ' col AF (Website Patients)');
     } else {
       // action == 'submit': write Google Reviews count to column B
       sheet.getRange(targetRow, 2).setValue(value);
@@ -119,7 +123,7 @@ function doGet(e) {
           .setMimeType(ContentService.MimeType.JSON);
       }
       // Read up to 30 columns, skip header row (row 1)
-      const raw  = sheet.getRange(2, 1, lastRow - 1, 30).getValues();
+      const raw  = sheet.getRange(2, 1, lastRow - 1, 32).getValues();
       const rows = raw.filter(function(r) { return r[0] !== ''; });
       return ContentService
         .createTextOutput(JSON.stringify({rows: rows}))
