@@ -1100,7 +1100,7 @@ async function confirmAllWeeks() {
       await fetch(CONFIG.APPS_SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
-        body: JSON.stringify({ sheet_id: client.sheet_id, action: 'confirm', value: 'YES' })
+        body: JSON.stringify({ sheet_id: client.sheet_id, action: 'confirm', value: 'YES', week: getSelectedWeekLabel() })
       });
       // opaque response — assume success if no network error thrown
       ok++;
