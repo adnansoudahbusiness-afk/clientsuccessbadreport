@@ -646,6 +646,8 @@
       color: var(--muted);
       margin-top: 4px;
     }
+    .hide-wp-col th:nth-child(4),
+    .hide-wp-col td:nth-child(4) { display: none; }
   </style>
 </head>
 <body>
@@ -1355,17 +1357,21 @@ async function loadClientReport(client) {
     const summaryCards    = document.getElementById('client-summary-cards');
     if (summaryCards) {
       const sc_total  = (latestRow[30] !== '' && latestRow[30] !== null && latestRow[30] !== undefined) ? latestRow[30] : '\u2014';
-      const sc_wp     = (latestRow[31] !== '' && latestRow[31] !== null && latestRow[31] !== undefined) ? latestRow[31] : '\u2014';
+      const _sc_wp_raw = latestRow[31];
+      const sc_wp_has_data = (_sc_wp_raw !== '' && _sc_wp_raw !== null && _sc_wp_raw !== undefined && _sc_wp_raw !== 0 && _sc_wp_raw !== '0');
+      const sc_wp     = sc_wp_has_data ? _sc_wp_raw : '\u2014';
       const sc_np     = (latestRow[3]  !== '' && latestRow[3]  !== null && latestRow[3]  !== undefined) ? latestRow[3]  : '\u2014';
       summaryCards.innerHTML =
         '<div class="client-summary-card">' +
           '<div class="client-summary-card-value">' + sc_total + '</div>' +
           '<div class="client-summary-card-label">Total Google Reviews</div>' +
         '</div>' +
-        '<div class="client-summary-card">' +
-          '<div class="client-summary-card-value">' + sc_wp + '</div>' +
-          '<div class="client-summary-card-label">Website Patients</div>' +
-        '</div>' +
+        (sc_wp_has_data ?
+          '<div class="client-summary-card">' +
+            '<div class="client-summary-card-value">' + sc_wp + '</div>' +
+            '<div class="client-summary-card-label">Website Patients</div>' +
+          '</div>'
+        : '') +
         '<div class="client-summary-card">' +
           '<div class="client-summary-card-value">' + sc_np + '</div>' +
           '<div class="client-summary-card-label">New Patients This Week</div>' +
@@ -1447,7 +1453,8 @@ async function loadClientReport(client) {
         : '<span class="pill pill-green">\u2705 Good Week</span>';
 
       const totalReviews    = (row[30] !== '' && row[30] !== null && row[30] !== undefined) ? row[30] : '\u2014';
-      const websitePatients = (row[31] !== '' && row[31] !== null && row[31] !== undefined) ? row[31] : '\u2014';
+      const _wp31 = row[31];
+      const websitePatients = (_wp31 !== '' && _wp31 !== null && _wp31 !== undefined && _wp31 !== 0 && _wp31 !== '0') ? _wp31 : '\u2014';
 
       const tr = document.createElement('tr');
       tr.innerHTML =
@@ -1461,6 +1468,17 @@ async function loadClientReport(client) {
         '<td>' + rowStatus + '</td>';
       tbody.appendChild(tr);
     });
+
+    // Hide Website Patients column if every row has 0 or empty value
+    const allWpEmpty = rows.every(function(row) {
+      const v = row[31];
+      return v === '' || v === null || v === undefined || v === 0 || v === '0';
+    });
+    const clientTable = tbody.closest('table');
+    if (clientTable) {
+      if (allWpEmpty) clientTable.classList.add('hide-wp-col');
+      else            clientTable.classList.remove('hide-wp-col');
+    }
 
     // Animate metric bars (trigger CSS transition after paint)
     requestAnimationFrame(function() {
