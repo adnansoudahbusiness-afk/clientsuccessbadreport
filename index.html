@@ -980,17 +980,16 @@ function buildTab1Weeks() {
   const hardcoded = [
     { label: "Week 1 \u2014 Sat 21/3 \u2013 Thu 26/3", week: "Sat 21/3 \u2013 Thu 26/3" },
     { label: "Week 2 \u2014 Sat 28/3 \u2013 Thu 2/4",  week: "Sat 28/3 \u2013 Thu 2/4"  },
-    { label: "Week 3 \u2014 Sat 4/4 \u2013 Thu 9/4",   week: "Sat 4/4 \u2013 Thu 9/4"   }
+    { label: "Week 3 \u2014 Sat 4/4 \u2013 Thu 9/4",   week: "Sat 4/4 \u2013 Thu 9/4"   },
+    { label: "Week 4 \u2014 Sat 11/4 \u2013 Thu 16/4", week: "Sat 11/4 \u2013 Thu 16/4", isDefault: true }
   ];
   const current = getWeekBounds();
   const curShort = "Sat " + fmtDate(current.start, true) + " \u2013 Thu " + fmtDate(current.end, true);
   const isDup = hardcoded.some(function(h) { return h.week === curShort; });
-  const currentEntry = { label: "Current Week \u2014 " + curShort, week: curShort, isCurrent: true };
-  return isDup
-    ? hardcoded.map(function(h) {
-        return h.week === curShort ? Object.assign({}, h, { label: "Current Week \u2014 " + h.week, isCurrent: true }) : h;
-      })
-    : hardcoded.concat([currentEntry]);
+  if (!isDup) {
+    hardcoded.push({ label: "Current Week \u2014 " + curShort, week: curShort });
+  }
+  return hardcoded;
 }
 
 function initTab1() {
@@ -1001,10 +1000,10 @@ function initTab1() {
     const opt = document.createElement('option');
     opt.value = w.week;
     opt.textContent = w.label;
-    if (w.isCurrent) opt.selected = true;
+    if (w.isDefault) opt.selected = true;
     sel.appendChild(opt);
   });
-  const selected = weeks.find(function(w) { return w.isCurrent; }) || weeks[weeks.length - 1];
+  const selected = weeks.find(function(w) { return w.isDefault; }) || weeks[weeks.length - 1];
   document.getElementById('week-display').textContent = selected.week;
 
   const tbody = document.getElementById('reviews-tbody');
