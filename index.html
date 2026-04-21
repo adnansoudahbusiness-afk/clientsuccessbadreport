@@ -1008,9 +1008,10 @@ const GHL_BASE = "https://services.leadconnectorhq.com";
 // AUTH
 // ═══════════════════════════════════════════
 const ADMIN_USERS = {
-  "threeup": "cao2026",
-  "hamzeh":  "hamzeh2026",
-  "laith":   "laith2026"
+  "threeup":   "cao2026",
+  "hamzeh":    "hamzeh2026",
+  "laith":     "laith2026",
+  "marketing": "marketingpassword"
 };
 
 function doLogin() {
@@ -1047,13 +1048,35 @@ function doLogout() {
   document.getElementById('login-error').classList.remove('show');
 }
 
+var _activeAdminUser = '';
+
 function showAdminDashboard(username) {
+  _activeAdminUser = username || '';
   document.getElementById('login-screen').style.display = 'none';
   const dash = document.getElementById('admin-dashboard');
   dash.style.display = 'flex';
   dash.style.flexDirection = 'column';
   document.getElementById('admin-user-badge').textContent = username || 'Admin';
-  initDashboard();
+
+  if (username === 'marketing') {
+    // Hide all nav tabs except Insights
+    document.querySelectorAll('.nav-tab').forEach(function(btn) {
+      const isInsights = btn.getAttribute('onclick') && btn.getAttribute('onclick').indexOf('tab-insights') !== -1;
+      btn.style.display = isInsights ? '' : 'none';
+    });
+    // Activate Insights tab directly
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    document.getElementById('tab-insights').classList.add('active');
+    document.querySelectorAll('.nav-tab').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.nav-tab').forEach(function(btn) {
+      if (btn.getAttribute('onclick') && btn.getAttribute('onclick').indexOf('tab-insights') !== -1) {
+        btn.classList.add('active');
+      }
+    });
+    loadInsights();
+  } else {
+    initDashboard();
+  }
 }
 
 function showClientDashboard(clientIndex) {
@@ -1075,6 +1098,7 @@ document.getElementById('login-pass').addEventListener('keydown', function(e) {
 // TABS (admin)
 // ═══════════════════════════════════════════
 function switchTab(tabId, btn) {
+  if (_activeAdminUser === 'marketing' && tabId !== 'tab-insights') return;
   document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.nav-tab').forEach(function(b) { b.classList.remove('active'); });
   document.getElementById(tabId).classList.add('active');
