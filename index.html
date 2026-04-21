@@ -1652,12 +1652,20 @@ async function loadInsights() {
         '<div class="insights-hero-sub2">+' + bestRevs.lastReviews + ' new review' + (bestRevs.lastReviews !== 1 ? 's' : '') + ' this week</div>' +
         '<div class="insights-hero-badge">&#127942; Review Machine</div>' +
       '</div>' +
-      '<div class="insights-hero-card">' +
-        '<div class="insights-hero-title">&#127942; ' + esc(bestStreak.name) + '</div>' +
-        '<div class="insights-hero-sub">' + bestStreak.streak + ' consecutive clean week' + (bestStreak.streak !== 1 ? 's' : '') + '</div>' +
-        (bestStreak.streakSince ? '<div class="insights-hero-sub2">Zero flags since ' + esc(bestStreak.streakSince) + '</div>' : '') +
-        '<div class="insights-hero-badge">&#127942; Most Consistent</div>' +
-      '</div>' +
+      (bestStreak.streak >= 2
+        ? '<div class="insights-hero-card">' +
+            '<div class="insights-hero-title">&#127942; ' + esc(bestStreak.name) + '</div>' +
+            '<div class="insights-hero-sub">' + bestStreak.streak + ' consecutive clean week' + (bestStreak.streak !== 1 ? 's' : '') + '</div>' +
+            (bestStreak.streakSince ? '<div class="insights-hero-sub2">Zero flags since ' + esc(bestStreak.streakSince) + '</div>' : '') +
+            '<div class="insights-hero-badge">&#127942; Most Consistent</div>' +
+          '</div>'
+        : '<div class="insights-hero-card">' +
+            '<div class="insights-hero-title">&#127919; Building Consistency</div>' +
+            '<div class="insights-hero-sub">' + summaries.filter(function(s) { return s.clean; }).length + ' clinics had a clean week this week</div>' +
+            '<div class="insights-hero-sub2">Keep the momentum — streaks are on the way</div>' +
+            '<div class="insights-hero-badge">&#128170; Consistency in progress</div>' +
+          '</div>'
+      ) +
     '</div>';
 
   // ── Section 3: Trend Analysis ─────────────────────────────────────────────
