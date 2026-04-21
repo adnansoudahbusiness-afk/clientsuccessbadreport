@@ -1082,40 +1082,47 @@ async function submitAllReviews() {
   const weekLabel = getSelectedWeekLabel();
   let ok = 0, total = 0;
   const promises = CONFIG.CLIENTS.map(async function(client, i) {
-    const input = document.getElementById('rev-' + i);
-    const val = parseInt(input.value, 10);
-    if (!val || val <= 0) return;
+    const revInput = document.getElementById('rev-' + i);
+    const wpInput  = document.getElementById('wp-' + i);
+    const revVal   = parseInt(revInput ? revInput.value : '', 10) || 0;
+    const wpVal    = parseInt(wpInput  ? wpInput.value  : '', 10) || 0;
+    const revEntered = revInput && revInput.value.trim() !== '' && revVal > 0;
+    const wpEntered  = wpInput  && wpInput.value.trim()  !== '';
+    if (!revEntered && !wpEntered) return;
     if (client.sheet_id === 'SHEET_ID') {
-      document.getElementById('rev-status-' + i).textContent = '\u26A0\uFE0F';
+      if (revInput) document.getElementById('rev-status-' + i).textContent = '\u26A0\uFE0F';
       return;
     }
     total++;
     const statusEl = document.getElementById('rev-status-' + i);
     statusEl.innerHTML = '<span class="spinner"></span>';
-    try {
-      // no-cors: Apps Script doesn't support CORS preflight; response is opaque
-      await fetch(CONFIG.APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        body: JSON.stringify({ sheet_id: client.sheet_id, value: val, week: weekLabel })
-      });
-      // opaque response — assume success if no network error thrown
-      ok++;
+    let rowOk = true;
+    if (revEntered) {
+      try {
+        // no-cors: Apps Script doesn't support CORS preflight; response is opaque
+        await fetch(CONFIG.APPS_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          body: JSON.stringify({ sheet_id: client.sheet_id, value: revVal, week: weekLabel })
+        });
+        ok++;
+        statusEl.innerHTML = '<span class="pill pill-green">\u2705 Submitted</span>';
+      } catch (e) {
+        rowOk = false;
+        statusEl.innerHTML = '<span class="pill pill-red">\u274C Network Error</span>';
+      }
+    } else {
       statusEl.innerHTML = '<span class="pill pill-green">\u2705 Submitted</span>';
-    } catch (e) {
-      statusEl.innerHTML = '<span class="pill pill-red">\u274C Network Error</span>';
+      ok++;
     }
-    // Submit Website Patients if entered
-    const wpInput = document.getElementById('wp-' + i);
-    const wpVal   = parseInt(wpInput ? wpInput.value : '0', 10);
-    if (wpVal > 0 && client.sheet_id !== 'SHEET_ID') {
+    if (wpEntered) {
       try {
         await fetch(CONFIG.APPS_SCRIPT_URL, {
           method: 'POST',
           mode: 'no-cors',
           body: JSON.stringify({ sheet_id: client.sheet_id, value: wpVal, week: weekLabel, action: 'submit_wp' })
         });
-      } catch (e) { /* non-critical — wp submission failure does not affect reviews status */ }
+      } catch (e) { /* non-critical */ }
     }
   });
 
