@@ -1366,15 +1366,20 @@ async function loadClientReport(client) {
       return;
     }
 
-    // Summary cards — most recent week (last row)
-    const latestRow       = rows[rows.length - 1];
-    const summaryCards    = document.getElementById('client-summary-cards');
+    // Summary cards
+    const latestRow    = rows[rows.length - 1];
+    const summaryCards = document.getElementById('client-summary-cards');
     if (summaryCards) {
-      const sc_total  = (latestRow[30] !== '' && latestRow[30] !== null && latestRow[30] !== undefined) ? latestRow[30] : '\u2014';
-      const _sc_wp_raw = latestRow[31];
-      const sc_wp_has_data = (_sc_wp_raw !== '' && _sc_wp_raw !== null && _sc_wp_raw !== undefined && _sc_wp_raw !== 0 && _sc_wp_raw !== '0');
-      const sc_wp     = sc_wp_has_data ? _sc_wp_raw : '\u2014';
-      const sc_np     = (latestRow[3]  !== '' && latestRow[3]  !== null && latestRow[3]  !== undefined) ? latestRow[3]  : '\u2014';
+      const sc_total = (latestRow[30] !== '' && latestRow[30] !== null && latestRow[30] !== undefined) ? latestRow[30] : '\u2014';
+      const sc_np    = (latestRow[3]  !== '' && latestRow[3]  !== null && latestRow[3]  !== undefined) ? latestRow[3]  : '\u2014';
+
+      // Website Patients: sum across ALL weeks (col AF index 31)
+      const sc_wp_total = rows.reduce(function(sum, row) {
+        const v = parseFloat(row[31]);
+        return sum + (isNaN(v) ? 0 : v);
+      }, 0);
+      const sc_wp_has_data = sc_wp_total > 0;
+
       summaryCards.innerHTML =
         '<div class="client-summary-card">' +
           '<div class="client-summary-card-value">' + sc_total + '</div>' +
@@ -1382,8 +1387,8 @@ async function loadClientReport(client) {
         '</div>' +
         (sc_wp_has_data ?
           '<div class="client-summary-card">' +
-            '<div class="client-summary-card-value">' + sc_wp + '</div>' +
-            '<div class="client-summary-card-label">Website Patients</div>' +
+            '<div class="client-summary-card-value">' + sc_wp_total + '</div>' +
+            '<div class="client-summary-card-label">Total Website Patients</div>' +
           '</div>'
         : '') +
         '<div class="client-summary-card">' +
