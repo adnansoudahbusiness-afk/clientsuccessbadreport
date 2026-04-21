@@ -1055,6 +1055,13 @@ function initTab1() {
 
 function onTab1WeekChange() {
   document.getElementById('week-display').textContent = document.getElementById('tab1-week-select').value;
+  document.querySelectorAll('.review-input').forEach(function(inp) {
+    inp.value = '';
+    inp.placeholder = '0';
+  });
+  document.querySelectorAll('.status-cell').forEach(function(cell) {
+    cell.innerHTML = '';
+  });
 }
 
 function getSelectedWeekLabel() {
