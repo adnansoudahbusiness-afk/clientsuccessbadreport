@@ -1789,6 +1789,257 @@ async function loadInsights() {
 
   const ammoHtml = window._ammoHtml || '';
 
+  // ── Sections A–G: Analytics Suite ─────────────────────────────────────────
+  var analyticsHtml = (function() {
+    var _sid = 0;
+
+    function escA(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function linReg(pts) {
+      var n = pts.length; if (n < 2) return {m:0, b:0};
+      var sx=0,sy=0,sxy=0,sx2=0;
+      for (var i=0;i<n;i++){sx+=pts[i].x;sy+=pts[i].y;sxy+=pts[i].x*pts[i].y;sx2+=pts[i].x*pts[i].x;}
+      var d = n*sx2 - sx*sx; var m = d?((n*sxy-sx*sy)/d):0;
+      return {m:m, b:(sy-m*sx)/n};
+    }
+
+    function scatterSVG(pts, xLbl, yLbl) {
+      var W=380,H=240,ml=45,mb=35,mt=15,mr=15,pw=W-ml-mr,ph=H-mt-mb;
+      var xs=pts.map(function(p){return p.x;}), ys=pts.map(function(p){return p.y;});
+      var xmax=Math.max.apply(null,xs.concat([1])), ymax=Math.max.apply(null,ys.concat([1]));
+      var xr=xmax||1, yr=ymax||1;
+      function cx(v){return (ml+v/xr*pw).toFixed(1);}
+      function cy(v){return (mt+(1-v/yr)*ph).toFixed(1);}
+      var lr=linReg(pts);
+      var tl=''; if(pts.length>=2){var ty1=Math.max(0,Math.min(ymax,lr.b)),ty2=Math.max(0,Math.min(ymax,lr.m*xmax+lr.b));tl='<line x1="'+cx(0)+'" y1="'+cy(ty1)+'" x2="'+cx(xmax)+'" y2="'+cy(ty2)+'" stroke="#A899DB" stroke-width="1.5" stroke-dasharray="5,3" opacity=".8"/>';}
+      var dots=pts.map(function(p){return '<circle cx="'+cx(p.x)+'" cy="'+cy(p.y)+'" r="5" fill="'+(p.bad?'#ef4444':'#22c55e')+'" opacity=".75" stroke="white" stroke-width="1"><title>'+escA(p.name)+'\n'+xLbl+': '+p.x+'\n'+yLbl+': '+p.y+'</title></circle>';}).join('');
+      var t2=Math.round(xmax/3),t3=Math.round(2*xmax/3),u2=Math.round(ymax/3),u3=Math.round(2*ymax/3);
+      var ticks='<text x="'+cx(t2)+'" y="'+(mt+ph+14)+'" text-anchor="middle" fill="#999" font-size="9">'+t2+'</text><text x="'+cx(t3)+'" y="'+(mt+ph+14)+'" text-anchor="middle" fill="#999" font-size="9">'+t3+'</text><text x="'+(ml-4)+'" y="'+cy(u2)+'" text-anchor="end" fill="#999" font-size="9" dominant-baseline="middle">'+u2+'</text><text x="'+(ml-4)+'" y="'+cy(u3)+'" text-anchor="end" fill="#999" font-size="9" dominant-baseline="middle">'+u3+'</text>';
+      var axes='<rect x="'+ml+'" y="'+mt+'" width="'+pw+'" height="'+ph+'" fill="rgba(168,153,219,.04)" rx="4"/><line x1="'+ml+'" y1="'+mt+'" x2="'+ml+'" y2="'+(mt+ph)+'" stroke="#ddd" stroke-width="1"/><line x1="'+ml+'" y1="'+(mt+ph)+'" x2="'+(ml+pw)+'" y2="'+(mt+ph)+'" stroke="#ddd" stroke-width="1"/><text x="'+(ml+pw/2)+'" y="'+(H-3)+'" text-anchor="middle" fill="#888" font-size="10">'+escA(xLbl)+'</text><text x="12" y="'+(mt+ph/2)+'" text-anchor="middle" fill="#888" font-size="10" transform="rotate(-90 12 '+(mt+ph/2)+')">'+escA(yLbl)+'</text>';
+      return '<svg width="100%" viewBox="0 0 '+W+' '+H+'" style="display:block">'+axes+ticks+tl+dots+'</svg>';
+    }
+
+    function collSec(title, sub, content, open) {
+      _sid++;
+      var bid='asec-b-'+_sid, cid='asec-c-'+_sid;
+      return '<div style="margin-bottom:12px;border:1px solid rgba(168,153,219,.2);border-radius:14px;overflow:hidden">'+
+        '<div style="padding:13px 18px;background:rgba(168,153,219,.1);cursor:pointer;display:flex;justify-content:space-between;align-items:center" '+
+        'onclick="(function(){var b=document.getElementById(\''+bid+'\');var c=document.getElementById(\''+cid+'\');var o=b.style.display!==\'none\';b.style.display=o?\'none\':\'block\';c.textContent=o?\'▼\':\'▲\';})()">' +
+          '<div><div style="font-weight:700;font-size:14px;color:var(--text)">'+title+'</div>'+(sub?'<div style="font-size:11px;color:var(--muted);margin-top:1px">'+sub+'</div>':'')+
+          '</div><span id="'+cid+'" style="color:#A899DB;font-size:13px">'+(open?'▲':'▼')+'</span></div>'+
+        '<div id="'+bid+'" style="display:'+(open?'block':'none')+';padding:18px 18px;background:rgba(255,255,255,.72)">'+content+'</div>'+
+      '</div>';
+    }
+
+    // ── A: Correlation Matrix ──────────────────────────────────────────────
+    var trigPts = summaries.map(function(s){return {x:Math.round(s.triggers),y:Math.round(s.lastPatients),name:s.name,bad:!s.clean};});
+    var revPtsA = summaries.map(function(s){return {x:Math.round(s.lastReviews),y:Math.round(s.lastPatients),name:s.name,bad:!s.clean};});
+
+    var lrRev = linReg(revPtsA);
+    var revInsight = lrRev.m > 0
+      ? 'Each additional review this week correlates with +'+lrRev.m.toFixed(2)+' new patients on average.'
+      : 'Weak correlation between reviews and patients in current data.';
+
+    var highTrig = summaries.filter(function(s){return s.triggers>=20;}),
+        lowTrig  = summaries.filter(function(s){return s.triggers>0&&s.triggers<20;});
+    var avgHiPat = highTrig.length ? (highTrig.reduce(function(a,s){return a+s.lastPatients;},0)/highTrig.length).toFixed(1) : 'N/A';
+    var avgLoPat = lowTrig.length  ? (lowTrig.reduce(function(a,s){return a+s.lastPatients;},0)/lowTrig.length).toFixed(1)  : 'N/A';
+
+    // Cancel bar chart (top 15)
+    var canSorted = summaries.filter(function(s){return s.lastCancel>0;}).slice().sort(function(a,b){return b.lastCancel-a.lastCancel;}).slice(0,15);
+    var canMax = canSorted.length ? Math.max.apply(null,canSorted.map(function(s){return s.lastCancel;})) : 1;
+    var canBars = '<div style="display:flex;flex-direction:column;gap:5px">';
+    canSorted.forEach(function(s){
+      var w=(s.lastCancel/canMax*100).toFixed(1);
+      var col=s.lastCancel>0.25?'#ef4444':s.lastCancel>0.15?'#f59e0b':'#22c55e';
+      canBars+='<div style="display:flex;align-items:center;gap:7px">'+
+        '<div style="width:130px;font-size:10px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.name)+'</div>'+
+        '<div style="flex:1;background:#f3f3f3;border-radius:3px;height:14px;position:relative">'+
+          '<div style="width:'+w+'%;background:'+col+';height:100%;border-radius:3px"></div>'+
+          (canMax>0.25?'<div style="position:absolute;left:'+(25/canMax*100).toFixed(1)+'%;top:0;bottom:0;width:1px;background:#888;opacity:.4"></div>':'')+'</div>'+
+        '<div style="width:36px;font-size:10px;font-weight:600;color:'+col+'">'+(s.lastCancel*100).toFixed(1)+'%</div></div>';
+    });
+    canBars+='</div><div style="font-size:11px;color:var(--muted);margin-top:6px">Vertical line = 25% threshold.</div>';
+
+    // Hook histogram
+    var hookRates = active.map(function(r){return _n(r.rows[r.rows.length-1][8]);}).filter(function(v){return v>0;});
+    var buckets=[[0,.2],[.2,.4],[.4,.6],[.6,.8],[.8,1.01]];
+    var histD=buckets.map(function(b){return {lo:b[0],hi:b[1],label:Math.round(b[0]*100)+'–'+Math.round(b[1]*100)+'%',cnt:hookRates.filter(function(v){return v>=b[0]&&v<b[1];}).length,above:b[0]>=0.6};});
+    var hMax=Math.max.apply(null,histD.map(function(d){return d.cnt;}))||1;
+    var HW=300,HH=150,hml=25,hmb=30,hmt=10,hmr=10,hpw=HW-hml-hmr,hph=HH-hmt-hmb,bw=hpw/histD.length-3;
+    var histBars=histD.map(function(d,i){var bh=(d.cnt/hMax)*hph,bx=hml+i*(hpw/histD.length)+1.5,by=hmt+hph-bh;return '<rect x="'+bx.toFixed(1)+'" y="'+by.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+bh.toFixed(1)+'" fill="'+(d.above?'#22c55e':'#ef4444')+'" opacity=".8" rx="2"><title>'+d.label+': '+d.cnt+'</title></rect><text x="'+(bx+bw/2).toFixed(1)+'" y="'+(HH-hmb+11)+'" text-anchor="middle" fill="#888" font-size="8">'+d.label+'</text>'+(d.cnt?'<text x="'+(bx+bw/2).toFixed(1)+'" y="'+(by-3).toFixed(1)+'" text-anchor="middle" fill="#555" font-size="9">'+d.cnt+'</text>':'');}).join('');
+    var thX=hml+3*hpw/histD.length;
+    var histSVG='<svg width="100%" viewBox="0 0 '+HW+' '+HH+'" style="display:block"><rect x="'+hml+'" y="'+hmt+'" width="'+hpw+'" height="'+hph+'" fill="rgba(168,153,219,.04)" rx="4"/><line x1="'+thX.toFixed(1)+'" y1="'+hmt+'" x2="'+thX.toFixed(1)+'" y2="'+(hmt+hph)+'" stroke="#A899DB" stroke-dasharray="3,2" stroke-width="1.5" opacity=".8"/><text x="'+(thX+3).toFixed(1)+'" y="'+(hmt+9)+'" fill="#A899DB" font-size="9">60% target</text>'+histBars+'</svg>';
+
+    var aboveH=summaries.filter(function(s){return !s.hookFlag;}).length;
+
+    var corrContent=
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">'+
+        '<div><div style="font-size:12px;font-weight:600;color:#A899DB;margin-bottom:7px">Trigger Links → New Patients</div>'+scatterSVG(trigPts,'Trigger Links (col H)','New Patients (col D)')+'<div style="font-size:11px;color:var(--muted);margin-top:6px">20+ trigger clinics avg <b>'+avgHiPat+'</b> pts/wk vs <b>'+avgLoPat+'</b> for lower-trigger clinics.</div></div>'+
+        '<div><div style="font-size:12px;font-weight:600;color:#A899DB;margin-bottom:7px">Google Reviews → New Patients</div>'+scatterSVG(revPtsA,'New Reviews (col B)','New Patients (col D)')+'<div style="font-size:11px;color:var(--muted);margin-top:6px">'+revInsight+'</div></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px">'+
+        '<div><div style="font-size:12px;font-weight:600;color:#A899DB;margin-bottom:7px">Cancellation Rate by Clinic</div>'+canBars+'</div>'+
+        '<div><div style="font-size:12px;font-weight:600;color:#A899DB;margin-bottom:7px">Hook Rate Distribution</div>'+histSVG+'<div style="font-size:11px;color:var(--muted);margin-top:5px"><span style="color:#22c55e">'+aboveH+' above 60%</span> &nbsp; <span style="color:#ef4444">'+(summaries.length-aboveH)+' below threshold</span></div></div>'+
+      '</div>';
+    var sA = collSec('🔬 What\'s Actually Driving Results?','Relationships between key metrics across all '+summaries.length+' clinics',corrContent,true);
+
+    // ── B: Performance Quadrant ────────────────────────────────────────────
+    var QW=500,QH=370,Qml=50,Qmb=42,Qmt=28,Qmr=20,Qpw=QW-Qml-Qmr,Qph=QH-Qmt-Qmb;
+    var gvals=summaries.map(function(s){return s.patientDelta;}),svals=summaries.map(function(s){return s.streak;});
+    var gmin=Math.min.apply(null,gvals),gmax=Math.max.apply(null,gvals.concat([0.01])),smax=Math.max.apply(null,svals.concat([4]));
+    var gr=gmax-gmin||1,sr=smax||1,gmid=(gmin+gmax)/2,smid=smax/2;
+    function qcx(v){return (Qml+(v-gmin)/gr*Qpw).toFixed(1);}
+    function qcy(v){return (Qmt+(1-v/sr)*Qph).toFixed(1);}
+    var qmx=parseFloat(qcx(gmid)),qmy=parseFloat(qcy(smid));
+    var mpats=Math.max.apply(null,summaries.map(function(s){return s.lastPatients;}))||1;
+    function getQ(g,s){if(g>=gmid&&s>=smid)return{n:'Stars',c:'#22c55e'};if(g<gmid&&s>=smid)return{n:'Gems',c:'#A899DB'};if(g>=gmid&&s<smid)return{n:'Rockets',c:'#f59e0b'};return{n:'Work',c:'#ef4444'};}
+    var qdots=summaries.map(function(s){var q=getQ(s.patientDelta,s.streak),r=Math.max(4,Math.min(11,4+s.lastPatients/mpats*7));return '<circle cx="'+qcx(s.patientDelta)+'" cy="'+qcy(s.streak)+'" r="'+r.toFixed(1)+'" fill="'+q.c+'" opacity=".75" stroke="white" stroke-width="1.5"><title>'+escA(s.name)+'\nGrowth: '+(s.patientDelta*100).toFixed(1)+'%\nStreak: '+s.streak+' wks\nPatients: '+s.lastPatients+'</title></circle>';}).join('');
+    var qCnt={Stars:0,Gems:0,Rockets:0,Work:0};
+    summaries.forEach(function(s){qCnt[getQ(s.patientDelta,s.streak).n]++;});
+    var quadSVG=
+      '<svg width="100%" viewBox="0 0 '+QW+' '+QH+'" style="display:block">'+
+        '<rect x="'+Qml+'" y="'+Qmt+'" width="'+(qmx-Qml).toFixed(1)+'" height="'+(qmy-Qmt).toFixed(1)+'" fill="rgba(168,153,219,.07)"/>'+
+        '<rect x="'+qmx.toFixed(1)+'" y="'+Qmt+'" width="'+(Qml+Qpw-qmx).toFixed(1)+'" height="'+(qmy-Qmt).toFixed(1)+'" fill="rgba(34,197,94,.07)"/>'+
+        '<rect x="'+Qml+'" y="'+qmy.toFixed(1)+'" width="'+(qmx-Qml).toFixed(1)+'" height="'+(Qmt+Qph-qmy).toFixed(1)+'" fill="rgba(239,68,68,.06)"/>'+
+        '<rect x="'+qmx.toFixed(1)+'" y="'+qmy.toFixed(1)+'" width="'+(Qml+Qpw-qmx).toFixed(1)+'" height="'+(Qmt+Qph-qmy).toFixed(1)+'" fill="rgba(245,158,11,.06)"/>'+
+        '<text x="'+((Qml+qmx)/2).toFixed(1)+'" y="'+(Qmt+14)+'" text-anchor="middle" fill="#A899DB" font-size="11" font-weight="600">💎 Hidden Gems</text>'+
+        '<text x="'+((qmx+Qml+Qpw)/2).toFixed(1)+'" y="'+(Qmt+14)+'" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="600">⭐ Stars</text>'+
+        '<text x="'+((Qml+qmx)/2).toFixed(1)+'" y="'+(Qmt+Qph-5)+'" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="600">🔧 Needs Work</text>'+
+        '<text x="'+((qmx+Qml+Qpw)/2).toFixed(1)+'" y="'+(Qmt+Qph-5)+'" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="600">🚀 Rockets</text>'+
+        '<line x1="'+qmx.toFixed(1)+'" y1="'+Qmt+'" x2="'+qmx.toFixed(1)+'" y2="'+(Qmt+Qph)+'" stroke="#ccc" stroke-width="1" stroke-dasharray="4,3"/>'+
+        '<line x1="'+Qml+'" y1="'+qmy.toFixed(1)+'" x2="'+(Qml+Qpw)+'" y2="'+qmy.toFixed(1)+'" stroke="#ccc" stroke-width="1" stroke-dasharray="4,3"/>'+
+        '<line x1="'+Qml+'" y1="'+Qmt+'" x2="'+Qml+'" y2="'+(Qmt+Qph)+'" stroke="#ddd" stroke-width="1"/>'+
+        '<line x1="'+Qml+'" y1="'+(Qmt+Qph)+'" x2="'+(Qml+Qpw)+'" y2="'+(Qmt+Qph)+'" stroke="#ddd" stroke-width="1"/>'+
+        '<text x="'+(Qml+Qpw/2)+'" y="'+(QH-4)+'" text-anchor="middle" fill="#888" font-size="11">Growth % (New Patients) →</text>'+
+        '<text x="13" y="'+(Qmt+Qph/2)+'" text-anchor="middle" fill="#888" font-size="11" transform="rotate(-90 13 '+(Qmt+Qph/2)+')">← Clean Streak (weeks)</text>'+
+        qdots+'</svg>';
+    var quadContent=quadSVG+
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;font-size:12px;text-align:center">'+
+        '<div style="background:rgba(34,197,94,.1);border-radius:8px;padding:8px"><div style="font-size:16px">⭐</div><div style="font-weight:700">'+qCnt.Stars+'</div><div style="color:var(--muted)">Stars</div></div>'+
+        '<div style="background:rgba(168,153,219,.1);border-radius:8px;padding:8px"><div style="font-size:16px">💎</div><div style="font-weight:700">'+qCnt.Gems+'</div><div style="color:var(--muted)">Hidden Gems</div></div>'+
+        '<div style="background:rgba(245,158,11,.1);border-radius:8px;padding:8px"><div style="font-size:16px">🚀</div><div style="font-weight:700">'+qCnt.Rockets+'</div><div style="color:var(--muted)">Rockets</div></div>'+
+        '<div style="background:rgba(239,68,68,.1);border-radius:8px;padding:8px"><div style="font-size:16px">🔧</div><div style="font-weight:700">'+qCnt.Work+'</div><div style="color:var(--muted)">Needs Work</div></div>'+
+      '</div><div style="font-size:11px;color:var(--muted);margin-top:6px">Dot size = new patients this week. Hover dots for clinic details.</div>';
+    var sB = collSec('📊 Performance Quadrant — Where Does Each Clinic Stand?','Growth vs Consistency — the full picture',quadContent,false);
+
+    // ── C: Momentum Tracker ───────────────────────────────────────────────
+    var momData = active.filter(function(r){return r.rows.length>=3;}).map(function(r){
+      var rows=r.rows,w1=_n(rows[rows.length-3][3]),w3=_n(rows[rows.length-1][3]),mom=w1>0?(w3-w1)/w1:0;
+      return {name:r.client.name,mom:mom,w1:w1,w3:w3};
+    }).filter(function(d){return d.mom!==0;}).sort(function(a,b){return b.mom-a.mom;});
+    var accel=momData.filter(function(d){return d.mom>0;}).length,decel=momData.filter(function(d){return d.mom<0;}).length;
+    var momMax=momData.length?Math.max.apply(null,momData.map(function(d){return Math.abs(d.mom);})):1;
+    var momContent='<div style="font-size:13px;font-weight:600;margin-bottom:12px"><span style="color:#22c55e">'+accel+' accelerating 📈</span> &nbsp; <span style="color:#ef4444">'+decel+' decelerating 📉</span></div>';
+    if(!momData.length){momContent+='<div style="color:var(--muted)">Need 3+ weeks of data per clinic to calculate momentum.</div>';}
+    else{
+      momContent+='<div style="display:flex;flex-direction:column;gap:7px">';
+      momData.forEach(function(d){
+        var pa=Math.abs(d.mom*100).toFixed(1),bw=(Math.abs(d.mom)/momMax*44).toFixed(1),pos=d.mom>0,col=pos?'#22c55e':'#ef4444';
+        momContent+='<div style="display:flex;align-items:center;gap:7px">'+
+          '<div style="width:140px;font-size:11px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(d.name)+'</div>'+
+          '<div style="width:48%;display:flex;align-items:center">'+
+            '<div style="width:50%;display:flex;justify-content:flex-end">'+ (!pos?'<div style="width:'+bw+'%;background:'+col+';height:13px;border-radius:3px 0 0 3px"></div>':'')+
+            '</div><div style="width:2px;background:#ccc;height:17px"></div>'+
+            '<div style="width:50%">'+(pos?'<div style="width:'+bw+'%;background:'+col+';height:13px;border-radius:0 3px 3px 0"></div>':'')+
+            '</div>'+
+          '</div>'+
+          '<div style="font-size:11px;font-weight:600;color:'+col+';min-width:44px">'+(pos?'+':'-')+pa+'%</div>'+
+        '</div>';
+      });
+      momContent+='</div>';
+    }
+    var sC = collSec('📈 Momentum — Who\'s Accelerating?','Change in new patients from 3 weeks ago to now',momContent,false);
+
+    // ── D: Anomaly Detection ──────────────────────────────────────────────
+    var anoms=[];
+    summaries.forEach(function(s){
+      if(s.prevRow&&s.prevPatients>0){
+        var d=(s.lastPatients-s.prevPatients)/s.prevPatients;
+        if(d<-0.30) anoms.push({msg:'⚠️ '+s.name+' — patients dropped '+Math.abs(d*100).toFixed(0)+'% vs last week ('+s.prevPatients+' → '+s.lastPatients+')',bg:'#fef2f2',bd:'#ef4444'});
+        if(d>0.50)  anoms.push({msg:'🚀 '+s.name+' — patients spiked +'+( d*100).toFixed(0)+'% this week ('+s.prevPatients+' → '+s.lastPatients+')!',bg:'#f0fdf4',bd:'#22c55e'});
+      }
+      if(s.triggers>=15&&s.lastReviews===0) anoms.push({msg:'⚠️ '+s.name+' — '+s.triggers+' trigger links but 0 new reviews. Check if the review flow is working.',bg:'#fffbeb',bd:'#f59e0b'});
+      if(s.lastPatients>=15&&s.lastCancel>0.30) anoms.push({msg:'⚠️ '+s.name+' — '+s.lastPatients+' bookings but '+(s.lastCancel*100).toFixed(0)+'% cancellation rate. Patient quality issue?',bg:'#fef2f2',bd:'#f59e0b'});
+    });
+    var anomContent=anoms.length===0
+      ? '<div style="color:#22c55e;font-weight:600">✅ No anomalies detected this week — all metrics within normal range.</div>'
+      : '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">'+anoms.length+' anomal'+(anoms.length===1?'y':'ies')+' detected.</div>'+
+        '<div style="display:flex;flex-direction:column;gap:9px">'+anoms.map(function(a){return '<div style="background:'+a.bg+';border-left:4px solid '+a.bd+';border-radius:10px;padding:11px 14px;font-size:13px;line-height:1.5">'+esc(a.msg)+'</div>';}).join('')+'</div>';
+    var sD = collSec('🚨 Anomalies This Week — What Stands Out?','Auto-detected unusual patterns across all clinics',anomContent,true);
+
+    // ── E: Impact Story ───────────────────────────────────────────────────
+    var allPats=0,allRevs=0,totWk=0,cleanWk=0;var uWeeks={};
+    active.forEach(function(r){r.rows.forEach(function(row){allPats+=_n(row[3]);allRevs+=_n(row[1]);if(row[0])uWeeks[String(row[0]).trim()]=true;totWk++;if(!_flag(row[10])&&!_flag(row[11])&&!_flag(row[16]))cleanWk++;});});
+    var wkCnt=Object.keys(uWeeks).length, cleanPctE=totWk>0?Math.round(cleanWk/totWk*100):0;
+    function impCard(big,lbl,s1,s2){return '<div style="background:linear-gradient(135deg,#1a1a2e,#2d2a5e);color:#fff;border-radius:18px;padding:28px 20px;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.3)"><div style="font-size:38px;font-weight:900;color:#A899DB;line-height:1;margin-bottom:8px">'+big+'</div><div style="font-size:17px;font-weight:700;margin-bottom:5px">'+lbl+'</div><div style="font-size:12px;opacity:.75;margin-bottom:3px">'+s1+'</div><div style="font-size:11px;opacity:.55">'+s2+'</div><div style="margin-top:14px;font-size:9px;opacity:.4;text-transform:uppercase;letter-spacing:1px">Powered by ThreeUp</div></div>';}
+    var impactContent='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:10px">'+
+      impCard(allPats.toLocaleString(),'مريض جديد','عبر '+active.length+' عيادة في '+wkCnt+' أسابيع','بدون إعلانات مدفوعة')+
+      impCard(allRevs.toLocaleString(),'تقييم جوجل','جُمعت تلقائياً','بدون ما نطلب من المريض مرتين')+
+      impCard(cleanPctE+'%','من أسابيع عياداتنا','نظيفة بدون أي فلاج','Zero flags. Zero excuses.')+
+    '</div><div style="font-size:11px;color:var(--muted)">📸 Screenshot these cards for social media use.</div>';
+    var sE = collSec('✨ The ThreeUp Effect — Our Portfolio Story','Visual impact cards designed to screenshot and share',impactContent,false);
+
+    // ── F: Before/After Simulator ─────────────────────────────────────────
+    var validCalc=summaries.filter(function(s){return s.triggers>0&&s.lastPatients>0;});
+    var avgRR=validCalc.length?validCalc.reduce(function(a,s){return a+(s.triggers>0?s.lastReviews/s.triggers:0);},0)/validCalc.length:0.12;
+    var lrF=linReg(revPtsA),avgNPR=Math.max(0.05,lrF.m||0.3);
+    var cid2='fc-'+Math.floor(Math.random()*9999);
+    var def30revs=Math.round(30*4*avgRR),def30pats=Math.round(def30revs*avgNPR),def30rev=Math.round(def30pats*50),def30hrs=Math.round(30*4*3/60);
+    var calcContent=
+      '<div style="background:rgba(168,153,219,.07);border-radius:12px;padding:18px">'+
+        '<label style="font-size:13px;font-weight:600">How many appointments does your clinic have per week?</label>'+
+        '<div style="display:flex;align-items:center;gap:12px;margin:10px 0">'+
+          '<input type="range" id="'+cid2+'" min="5" max="200" value="30" style="flex:1;accent-color:#A899DB" '+
+          'oninput="(function(v){v=parseInt(v);var rr='+avgRR.toFixed(4)+',nr='+avgNPR.toFixed(4)+';'+
+          'var rv=Math.round(v*4*rr),pt=Math.round(rv*nr),re=pt*50,hr=Math.round(v*4*3/60);'+
+          'document.getElementById(\'d-'+cid2+'\').textContent=v;'+
+          'document.getElementById(\'rv-'+cid2+'\').textContent=rv;'+
+          'document.getElementById(\'pt-'+cid2+'\').textContent=pt;'+
+          'document.getElementById(\'re-'+cid2+'\').textContent=re.toLocaleString();'+
+          'document.getElementById(\'hr-'+cid2+'\').textContent=hr;})(this.value)">'+
+          '<div style="font-size:22px;font-weight:800;color:#A899DB;min-width:38px;text-align:center" id="d-'+cid2+'">30</div>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px">'+
+          '<div style="background:#fff;border-radius:10px;padding:13px;text-align:center;border:1px solid rgba(168,153,219,.2)"><div style="font-size:22px;font-weight:800;color:#A899DB" id="rv-'+cid2+'">'+def30revs+'</div><div style="font-size:11px;color:var(--muted)">estimated new Google Reviews/month</div></div>'+
+          '<div style="background:#fff;border-radius:10px;padding:13px;text-align:center;border:1px solid rgba(168,153,219,.2)"><div style="font-size:22px;font-weight:800;color:#A899DB" id="pt-'+cid2+'">'+def30pats+'</div><div style="font-size:11px;color:var(--muted)">estimated new patients from reviews</div></div>'+
+          '<div style="background:#fff;border-radius:10px;padding:13px;text-align:center;border:1px solid rgba(168,153,219,.2)"><div style="font-size:22px;font-weight:800;color:#22c55e" id="re-'+cid2+'">'+def30rev.toLocaleString()+'</div><div style="font-size:11px;color:var(--muted)">potential revenue impact (JOD/month)</div></div>'+
+          '<div style="background:#fff;border-radius:10px;padding:13px;text-align:center;border:1px solid rgba(168,153,219,.2)"><div style="font-size:22px;font-weight:800;color:#A899DB" id="hr-'+cid2+'">'+def30hrs+'</div><div style="font-size:11px;color:var(--muted)">hours saved on manual follow-ups/month</div></div>'+
+        '</div>'+
+        '<div style="font-size:11px;color:var(--muted);margin-top:10px;font-style:italic">Based on average performance across '+active.length+' partner clinics. Patient value = 50 JOD. Follow-up time = 3 min/patient.</div>'+
+      '</div>';
+    var sF = collSec('💡 What Could Your Clinic Achieve?','Interactive calculator based on real portfolio averages',calcContent,false);
+
+    // ── G: Competitive Benchmarks ─────────────────────────────────────────
+    var patVals=summaries.map(function(s){return s.lastPatients;}).sort(function(a,b){return a-b;});
+    var revVals=summaries.map(function(s){return s.totalReviews;}).sort(function(a,b){return a-b;});
+    function pctl(arr,p){if(!arr.length)return 0;return arr[Math.min(Math.floor(arr.length*p/100),arr.length-1)];}
+    var p25p=pctl(patVals,25),p50p=pctl(patVals,50),p75p=pctl(patVals,75),pmx=Math.max.apply(null,patVals.concat([1]));
+    var p25r=pctl(revVals,25),p50r=pctl(revVals,50),p75r=pctl(revVals,75),rmx=Math.max.apply(null,revVals.concat([1]));
+    var avgPatsB=(patVals.length?patVals.reduce(function(a,b){return a+b;},0)/patVals.length:0).toFixed(1);
+    function pBar(v25,v50,v75,vmax,lbl){return '<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:3px">'+lbl+'</div>'+
+      '<div style="position:relative;background:#f3f3f3;border-radius:5px;height:20px"><div style="position:absolute;left:0;width:'+(v75/vmax*100).toFixed(1)+'%;background:rgba(168,153,219,.3);height:100%;border-radius:5px"></div><div style="position:absolute;left:0;width:'+(v50/vmax*100).toFixed(1)+'%;background:rgba(168,153,219,.55);height:100%;border-radius:5px"></div><div style="position:absolute;left:0;width:'+(v25/vmax*100).toFixed(1)+'%;background:#A899DB;height:100%;border-radius:5px"></div><div style="position:absolute;right:6px;top:3px;font-size:9px;color:#555">Max: '+vmax+'</div></div>'+
+      '<div style="display:flex;gap:10px;margin-top:3px;font-size:10px"><span style="color:#A899DB">▪ 25th: '+v25+'</span><span style="color:rgba(168,153,219,.8)">▪ 50th: '+v50+'</span><span style="color:rgba(168,153,219,.6)">▪ 75th: '+v75+'</span></div></div>';}
+    // Donut
+    var DR=52,DCx=75,DCy=75,DS=20,DC=2*Math.PI*DR,cDash=(cleanPctE/100*DC).toFixed(1);
+    var donutSVG='<svg width="150" height="150" style="display:block;margin:0 auto"><circle cx="'+DCx+'" cy="'+DCy+'" r="'+DR+'" fill="none" stroke="#f3f3f3" stroke-width="'+DS+'"/><circle cx="'+DCx+'" cy="'+DCy+'" r="'+DR+'" fill="none" stroke="#22c55e" stroke-width="'+DS+'" stroke-dasharray="'+cDash+' '+(DC-parseFloat(cDash)).toFixed(1)+'" transform="rotate(-90 '+DCx+' '+DCy+')"/><text x="'+DCx+'" y="'+(DCy-5)+'" text-anchor="middle" fill="#22c55e" font-size="18" font-weight="800">'+cleanPctE+'%</text><text x="'+DCx+'" y="'+(DCy+11)+'" text-anchor="middle" fill="#888" font-size="9">flag-free</text></svg>';
+    var benchContent='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px">'+
+      '<div><div style="font-size:12px;font-weight:600;color:#A899DB;margin-bottom:8px">New Patients / Week</div>'+pBar(p25p,p50p,p75p,pmx,'Distribution across all clinics')+'<div style="font-size:11px;color:var(--muted)">Portfolio average: <b>'+avgPatsB+'</b> pts/wk<br>Top 25% book <b>'+p75p+'+</b> pts/wk</div></div>'+
+      '<div><div style="font-size:12px;font-weight:600;color:#A899DB;margin-bottom:8px">Total Google Reviews</div>'+pBar(p25r,p50r,p75r,rmx,'Cumulative reviews per clinic (col AE)')+'<div style="font-size:11px;color:var(--muted)">Median clinic has <b>'+p50r+'</b> total reviews<br>Top 25% have <b>'+p75r+'+</b> reviews</div></div>'+
+      '<div style="text-align:center"><div style="font-size:12px;font-weight:600;color:#A899DB;margin-bottom:8px">Clean Week Rate</div>'+donutSVG+'<div style="font-size:11px;color:var(--muted);margin-top:6px">'+cleanWk+' of '+totWk+' weekly reports were flag-free</div></div>'+
+    '</div>';
+    var sG = collSec('🏆 How Do Our Clinics Compare?','Anonymized benchmarks across our portfolio',benchContent,false);
+
+    return '<div class="insights-section" style="margin-bottom:40px">'+
+      '<div class="insights-section-title" style="margin-bottom:4px">📊 Internal Analytics</div>'+
+      '<div class="insights-section-sub" style="margin-bottom:14px">Deep-dive analysis for strategy and decisions</div>'+
+      sA + sB + sC + sD +
+      '<div class="insights-section-title" style="margin-bottom:4px;margin-top:30px">🎯 External Marketing</div>'+
+      '<div class="insights-section-sub" style="margin-bottom:14px">Visuals and tools for prospects and social proof</div>'+
+      sE + sF + sG +
+    '</div>';
+  })();
+
   // ── Section 2: Big Win Hero Cards ─────────────────────────────────────────
   const byGrowth  = summaries.slice().sort(function(a,b) { return b.growthPct - a.growthPct; });
   const byTotRev  = summaries.slice().sort(function(a,b) { return b.totalReviews - a.totalReviews; });
