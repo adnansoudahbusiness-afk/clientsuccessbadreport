@@ -744,6 +744,36 @@
     .insights-record-label { font-size:12px; opacity:.8; }
     .insights-record-who   { font-size:13px; font-weight:700; margin-top:10px; }
     .insights-record-when  { font-size:11px; opacity:.65; margin-top:2px; }
+    /* Content Ammunition */
+    .ammo-section { margin-bottom: 12px; border-radius: 14px; overflow: hidden; border: 1px solid rgba(168,153,219,.25); }
+    .ammo-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; background: rgba(168,153,219,.12); cursor: pointer;
+      user-select: none;
+    }
+    .ammo-header:hover { background: rgba(168,153,219,.2); }
+    .ammo-header-left { display: flex; align-items: center; gap: 10px; }
+    .ammo-tag { font-size: 11px; background: #A899DB; color: #fff; border-radius: 20px; padding: 2px 9px; font-weight: 600; }
+    .ammo-title { font-weight: 700; font-size: 14px; color: var(--text); }
+    .ammo-chevron { font-size: 12px; color: var(--muted); transition: transform .2s; }
+    .ammo-chevron.open { transform: rotate(180deg); }
+    .ammo-body { display: none; padding: 16px 18px; background: rgba(255,255,255,.6); }
+    .ammo-body.open { display: block; }
+    .ammo-textbox {
+      background: #1a1a2e; color: #e8e4ff; font-family: 'Courier New', monospace;
+      font-size: 13px; line-height: 1.7; border-radius: 10px; padding: 16px 18px;
+      white-space: pre-wrap; word-break: break-word; margin-bottom: 10px;
+    }
+    .ammo-copy-btn {
+      background: #A899DB; color: #fff; border: none; border-radius: 8px;
+      padding: 7px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background .15s;
+    }
+    .ammo-copy-btn:hover { background: #7c6db5; }
+    .ammo-frames { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .ammo-frame { background: #1a1a2e; color: #e8e4ff; border-radius: 10px; padding: 14px 16px; font-size: 13px; line-height: 1.7; font-family: 'Courier New', monospace; }
+    .ammo-frame-label { font-size: 11px; color: #A899DB; font-weight: 700; margin-bottom: 6px; font-family: inherit; }
+    @media (max-width: 700px) { .ammo-frames { grid-template-columns: 1fr; } }
     @media (max-width: 900px) {
       .insights-hero-grid, .insights-cards-grid { grid-template-columns: 1fr; }
       .insights-stat-grid, .insights-records-grid { grid-template-columns: repeat(2,1fr); }
@@ -1630,6 +1660,135 @@ async function loadInsights() {
       pulseBox((avgCancel*100).toFixed(1) + '%', 'average cancellation<br>rate this week', cancelOverall !== 0 ? -cancelOverall : null, '') +
     '</div>';
 
+  // ── Section 1b: Content Team Ammunition ──────────────────────────────────
+  (function() {
+    // Pick the most impressive single number
+    const totalPatsNum   = summaries.reduce(function(s,r) { return s + r.lastPatients; }, 0);
+    const totalRevsNum   = summaries.reduce(function(s,r) { return s + r.lastReviews;  }, 0);
+    const bestGrowthPct  = summaries.reduce(function(best,s) { return s.growthPct > best ? s.growthPct : best; }, 0);
+    const bestGrowthClinic = summaries.slice().sort(function(a,b) { return b.growthPct - a.growthPct; })[0];
+    const totalEverRevs  = summaries.reduce(function(s,r) { return s + r.totalReviews; }, 0);
+    const longestStreak  = summaries.reduce(function(best,s) { return s.streak > best ? s.streak : best; }, 0);
+    const longestStreakCl= summaries.slice().sort(function(a,b) { return b.streak - a.streak; })[0];
+    const cleanThisWeek  = summaries.filter(function(s) { return s.clean; }).length;
+
+    function ammoId(n) { return 'ammo-body-' + n; }
+    function chevId(n) { return 'ammo-chev-' + n; }
+    function copyId(n) { return 'ammo-copy-' + n; }
+
+    function ammoBlock(id, tag, title, bodyHtml) {
+      return '<div class="ammo-section">' +
+        '<div class="ammo-header" onclick="(function(){' +
+          'var b=document.getElementById(\'' + ammoId(id) + '\');' +
+          'var c=document.getElementById(\'' + chevId(id) + '\');' +
+          'b.classList.toggle(\'open\');c.classList.toggle(\'open\');' +
+        '})()">' +
+          '<div class="ammo-header-left">' +
+            '<span class="ammo-tag">' + tag + '</span>' +
+            '<span class="ammo-title">' + title + '</span>' +
+          '</div>' +
+          '<span class="ammo-chevron" id="' + chevId(id) + '">&#9660;</span>' +
+        '</div>' +
+        '<div class="ammo-body" id="' + ammoId(id) + '">' + bodyHtml + '</div>' +
+      '</div>';
+    }
+
+    function copyBtn(btnId, textareaId) {
+      return '<button class="ammo-copy-btn" id="' + btnId + '" onclick="(function(){' +
+        'var t=document.getElementById(\'' + textareaId + '\');' +
+        'navigator.clipboard.writeText(t.innerText||t.textContent).then(function(){' +
+          'var b=document.getElementById(\'' + btnId + '\');b.textContent=\'\u2705 Copied!\';' +
+          'setTimeout(function(){b.textContent=\'\uD83D\uDCCB Copy\';},2000);' +
+        '});' +
+      '})()">&#128203; Copy</button>';
+    }
+
+    // Block 1 — The Big Number Post
+    var bigNum = totalPatsNum;
+    var bigAr  = '\u{1F525}';  // fallback
+    var arCaption1, enCaption1;
+    if (totalPatsNum >= totalRevsNum && totalPatsNum > 0) {
+      arCaption1 = totalPatsNum + ' مريض جديد في أسبوع واحد فقط 🔥\nهذا ما حققناه لعيادات تعمل معنا هذا الأسبوع.\nمش بس أرقام — هذا نمو حقيقي.\nThreeUp | نظام إدارة المرضى الذكي';
+      enCaption1 = totalPatsNum + ' new patients in a single week.\nReal results. Real clinics. Real growth.\nThis is what we do at ThreeUp. 🚀';
+    } else {
+      arCaption1 = totalRevsNum + ' تقييم جوجل جديد في أسبوع واحد فقط ⭐\nهذا ما حققناه لعيادات تعمل معنا هذا الأسبوع.\nمش بس أرقام — هذا نمو حقيقي.\nThreeUp | نظام إدارة المرضى الذكي';
+      enCaption1 = totalRevsNum + ' new Google reviews in a single week.\nReal results. Real clinics. Real growth.\nThis is what we do at ThreeUp. 🚀';
+    }
+    var block1Body =
+      '<div class="ammo-textbox" id="ammo-text-1" dir="auto">' + arCaption1 + '\n\n──────────\n\n' + enCaption1 + '</div>' +
+      copyBtn('ammo-btn-1', 'ammo-text-1');
+
+    // Block 2 — Social Proof Post
+    var revSrc = totalRevsNum > 0 ? totalRevsNum : totalEverRevs;
+    var revLabel = totalRevsNum > 0 ? 'هالأسبوع' : 'لحد هلق';
+    var arCaption2 = '⭐ ' + revSrc + ' تقييم جوجل جديد ' + revLabel + '\nعيادات شريكة معنا تحصل على تقييمات حقيقية من مرضاهم — تلقائياً.\nانت شو بتنتظر؟\n.\n.\n#عيادة #جوجل #ريفيوز #ThreeUp';
+    var enCaption2 = revSrc + ' new Google reviews collected this week — automatically.\nOur partner clinics don\'t chase reviews. The system does it for them.\n.\n.\n#GoogleReviews #ClinicGrowth #ThreeUp';
+    var block2Body =
+      '<div class="ammo-textbox" id="ammo-text-2" dir="auto">' + arCaption2 + '\n\n──────────\n\n' + enCaption2 + '</div>' +
+      copyBtn('ammo-btn-2', 'ammo-text-2');
+
+    // Block 3 — Reel Hook Ideas
+    var hook1Ar = bestGrowthPct > 0
+      ? 'كيف عيادة زادت مرضاها ' + Math.round(bestGrowthPct * 100) + '% في أسبوعين؟ 🤯'
+      : 'كيف عيادة محلية بدأت تملأ جدولها كل أسبوع؟ 👇';
+    var hook1En = bestGrowthPct > 0
+      ? 'How a clinic grew bookings by ' + Math.round(bestGrowthPct * 100) + '% in 2 weeks 🤯'
+      : 'How a local clinic started filling their schedule every single week 👇';
+    var hook2Ar = 'عيادتك بتستاهل أكثر من ' + Math.max(totalRevsNum, 5) + ' تقييم على جوجل — وهيك نوصلك ⭐';
+    var hook2En = 'Your clinic deserves more than ' + Math.max(totalRevsNum, 5) + ' Google reviews. Here\'s how we get there. ⭐';
+    var hook3Ar = longestStreak >= 2
+      ? 'عيادة واحدة، ' + longestStreak + ' أسابيع متتالية بدون أي مشكلة في الحجوزات 💪'
+      : 'ليش بعض العيادات دايماً ممتلية وبعضها لأ؟ الجواب مش وين تحسب 🤔';
+    var hook3En = longestStreak >= 2
+      ? 'One clinic. ' + longestStreak + ' weeks straight. Zero booking issues. 💪'
+      : 'Why some clinics are always fully booked — and others aren\'t. The answer might surprise you. 🤔';
+    var hooksText =
+      '🎬 REEL HOOK IDEAS — Pick one:\n\n' +
+      '1️⃣  AR: ' + hook1Ar + '\n   EN: ' + hook1En + '\n\n' +
+      '2️⃣  AR: ' + hook2Ar + '\n   EN: ' + hook2En + '\n\n' +
+      '3️⃣  AR: ' + hook3Ar + '\n   EN: ' + hook3En;
+    var block3Body =
+      '<div class="ammo-textbox" id="ammo-text-3" dir="ltr">' + hooksText + '</div>' +
+      copyBtn('ammo-btn-3', 'ammo-text-3');
+
+    // Block 4 — Carousel Slide Ideas
+    var carouselText =
+      '📸 CAROUSEL — 5 SLIDES\n\n' +
+      'Slide 1 (Hook):\n"' + (totalPatsNum > 0 ? totalPatsNum + ' مريض جديد في أسبوع واحد' : totalRevsNum + ' تقييم جوجل في أسبوع') + ' 🔥"\n\n' +
+      'Slide 2 (System):\n"نظام ThreeUp بيتابع كل مريض — من أول رسالة لحتى ما يرجع مرة ثانية.\nتلقائي. ذكي. نتائج حقيقية."\n\n' +
+      'Slide 3 (Result 1 — Reviews):\n"هالأسبوع عيادات شريكانا جمعت ' + totalRevsNum + ' تقييم جوجل جديد ⭐\nبدون ما يطلبوا من أي مريض يكتب ريفيو."\n\n' +
+      'Slide 4 (Result 2 — Patients):\n"' + totalPatsNum + ' مريض جديد حجزوا هالأسبوع عبر عيادات شريكانا 📅\nهذا مو حظ — هذا نظام."\n\n' +
+      'Slide 5 (CTA):\n"عيادتك الجاية؟\nاشتغل معنا — رابط في البايو 👇\nWork with us — link in bio"';
+    var block4Body =
+      '<div class="ammo-textbox" id="ammo-text-4" dir="auto">' + carouselText + '</div>' +
+      copyBtn('ammo-btn-4', 'ammo-text-4');
+
+    // Block 5 — Story Sequence (3 frames)
+    var f1 = 'هالأسبوع شو صار؟ 👀\n[ستيكر: Poll — شو توقعك؟]';
+    var f2 = totalPatsNum + ' مريض جديد ✅\n+ ' + totalRevsNum + ' تقييم جوجل ⭐\n= نمو حقيقي لعيادات شريكانا 📈';
+    var f3 = 'عيادتك الجاية؟ 👇\nرابط في البايو\n[أضف ستيكر رابط]';
+    var block5Body =
+      '<div class="ammo-frames">' +
+        '<div class="ammo-frame"><div class="ammo-frame-label">Frame 1</div>' + f1 + '<br><br>' + copyBtn('ammo-btn-5a','ammo-frame-t1') + '</div>' +
+        '<div class="ammo-frame"><div class="ammo-frame-label">Frame 2</div>' + f2 + '<br><br>' + copyBtn('ammo-btn-5b','ammo-frame-t2') + '</div>' +
+        '<div class="ammo-frame"><div class="ammo-frame-label">Frame 3</div>' + f3 + '<br><br>' + copyBtn('ammo-btn-5c','ammo-frame-t3') + '</div>' +
+      '</div>' +
+      '<div style="display:none"><span id="ammo-frame-t1">' + f1 + '</span><span id="ammo-frame-t2">' + f2 + '</span><span id="ammo-frame-t3">' + f3 + '</span></div>';
+
+    window._ammoHtml =
+      '<div class="insights-section" style="margin-bottom:40px">' +
+        '<div class="insights-section-title" style="margin-bottom:4px">&#128241; Content Team Ammunition</div>' +
+        '<div class="insights-section-sub" style="margin-bottom:16px">Ready-to-post content based on this week\'s real data</div>' +
+        ammoBlock(1, '&#128247; Post', 'The Big Number Post',      block1Body) +
+        ammoBlock(2, '&#128247; Post', 'The Social Proof Post',    block2Body) +
+        ammoBlock(3, '&#127916; Reel', 'Reel Hook Ideas',          block3Body) +
+        ammoBlock(4, '&#128247; Carousel', 'Carousel Slide Ideas', block4Body) +
+        ammoBlock(5, '&#128366; Story', 'Weekly Win Story',        block5Body) +
+      '</div>';
+  })();
+
+  const ammoHtml = window._ammoHtml || '';
+
   // ── Section 2: Big Win Hero Cards ─────────────────────────────────────────
   const byGrowth  = summaries.slice().sort(function(a,b) { return b.growthPct - a.growthPct; });
   const byTotRev  = summaries.slice().sort(function(a,b) { return b.totalReviews - a.totalReviews; });
@@ -1851,7 +2010,7 @@ async function loadInsights() {
       '</div>' +
     '</div>';
 
-  body.innerHTML = pulseHtml + heroHtml + trendHtml + streakHtml + oppHtml + tableHtml + recordsHtml;
+  body.innerHTML = pulseHtml + ammoHtml + heroHtml + trendHtml + streakHtml + oppHtml + tableHtml + recordsHtml;
   _insightsLoaded = true;
 }
 
