@@ -1046,8 +1046,8 @@ function initTab1() {
     tr.innerHTML =
       '<td class="num">' + (i + 1) + '</td>' +
       '<td>' + escHtml(client.name) + '</td>' +
-      '<td><input type="number" class="review-input" id="rev-' + i + '" min="0" placeholder="0" /></td>' +
-      '<td><input type="number" class="review-input" id="wp-' + i + '" min="0" placeholder="0" /></td>' +
+      '<td><input type="number" class="review-input" id="rev-' + i + '" min="0" placeholder="" /></td>' +
+      '<td><input type="number" class="review-input" id="wp-' + i + '" min="0" placeholder="" /></td>' +
       '<td class="status-cell" id="rev-status-' + i + '"></td>';
     tbody.appendChild(tr);
   });
@@ -1057,7 +1057,7 @@ function onTab1WeekChange() {
   document.getElementById('week-display').textContent = document.getElementById('tab1-week-select').value;
   document.querySelectorAll('.review-input').forEach(function(inp) {
     inp.value = '';
-    inp.placeholder = '0';
+    inp.placeholder = '';
   });
   document.querySelectorAll('.status-cell').forEach(function(cell) {
     cell.innerHTML = '';
@@ -1086,7 +1086,7 @@ async function submitAllReviews() {
     const wpInput  = document.getElementById('wp-' + i);
     const revVal   = parseInt(revInput ? revInput.value : '', 10) || 0;
     const wpVal    = parseInt(wpInput  ? wpInput.value  : '', 10) || 0;
-    const revEntered = revInput && revInput.value.trim() !== '' && revVal > 0;
+    const revEntered = revInput && revInput.value.trim() !== '';
     const wpEntered  = wpInput  && wpInput.value.trim()  !== '';
     if (!revEntered && !wpEntered) return;
     if (client.sheet_id === 'SHEET_ID') {
