@@ -11,6 +11,7 @@ function doPost(e) {
     const lastRow = sheet.getLastRow();
 
     Logger.log('doPost received — action: ' + action + ', week: "' + week + '", value: ' + value);
+    console.log('doPost week received: "' + week + '"');
 
     if (lastRow < 2) {
       Logger.log('Sheet has no data rows');
@@ -41,30 +42,17 @@ function doPost(e) {
       }
     }
 
-    // 2. Fallback for submit: append a new row if no week match found
-    //    For confirm: no match is an error — we must not write YES to the wrong row
+    // 2. No week match — always return an error (no fallback for any action)
     if (targetRow === -1) {
-      if (action === 'confirm') {
-        Logger.log('Confirm failed — no matching row for week: "' + week + '"');
-        return ContentService
-          .createTextOutput(JSON.stringify({
-            success: false,
-            error: 'No row found matching week: "' + week + '"',
-            week: week,
-            action: action
-          }))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-
-      // submit: fallback to last row with data in column A
-      const colA = sheet.getRange(1, 1, lastRow, 1).getValues();
-      for (let i = colA.length - 1; i >= 0; i--) {
-        if (colA[i][0] !== '') {
-          targetRow = i + 1;
-          break;
-        }
-      }
-      Logger.log('Submit fallback — using last data row: ' + targetRow);
+      Logger.log('No matching row for week: "' + week + '" (action: ' + action + ')');
+      return ContentService
+        .createTextOutput(JSON.stringify({
+          success: false,
+          error: 'No row found matching week: "' + week + '"',
+          week: week,
+          action: action
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
     }
 
     if (targetRow <= 1) {
