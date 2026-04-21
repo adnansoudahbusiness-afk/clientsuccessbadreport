@@ -648,6 +648,112 @@
     }
     .hide-wp-col th:nth-child(4),
     .hide-wp-col td:nth-child(4) { display: none; }
+
+    /* INSIGHTS TAB */
+    .insights-hero-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 36px;
+    }
+    .insights-hero-card {
+      background: linear-gradient(135deg, #7c6db5, #A899DB);
+      color: #fff;
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 8px 32px rgba(124,109,181,.35);
+    }
+    .insights-hero-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+    .insights-hero-sub {
+      font-size: 14px;
+      opacity: .85;
+    }
+    .insights-section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 6px;
+      color: var(--text);
+    }
+    .insights-section-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+    .insights-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .insights-opp-card {
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(168,153,219,.2);
+      border-left: 4px solid #f59e0b;
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+    .insights-streak-card {
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(168,153,219,.2);
+      border-left: 4px solid #22c55e;
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+    .insights-card-name {
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .insights-card-detail {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .insights-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .insights-stat-box {
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(168,153,219,.2);
+      border-radius: 16px;
+      padding: 22px 18px;
+      text-align: center;
+    }
+    .insights-stat-value {
+      font-size: 36px;
+      font-weight: 800;
+      color: #A899DB;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .insights-stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    @media (max-width: 900px) {
+      .insights-hero-grid,
+      .insights-cards-grid { grid-template-columns: 1fr; }
+      .insights-stat-grid   { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 500px) {
+      .insights-stat-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -679,6 +785,7 @@
       <button class="nav-tab active" onclick="switchTab('tab-input', this)">Weekly Input</button>
       <button class="nav-tab" onclick="switchTab('tab-notes', this)">Notes History</button>
       <button class="nav-tab" onclick="switchTab('tab-status', this)">Client Status</button>
+      <button class="nav-tab" onclick="switchTab('tab-insights', this); loadInsights();">&#128202; Insights</button>
     </div>
     <div class="nav-right">
       <span class="nav-user-badge" id="admin-user-badge">Admin</span>
@@ -755,6 +862,22 @@
       <span class="summary-msg" id="status-summary"></span>
     </div>
     <div class="status-grid" id="status-grid"></div>
+  </div>
+
+  <!-- TAB 4: Insights -->
+  <div id="tab-insights" class="tab-content">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:28px">
+      <div>
+        <h2 style="margin-bottom:4px">Portfolio Insights</h2>
+        <div class="page-subtitle">Real results across all 27 clinics this week</div>
+      </div>
+      <button class="btn btn-blue" onclick="loadInsights()">&#8635; Refresh</button>
+    </div>
+    <div id="insights-body">
+      <div style="text-align:center;padding:60px 0;color:var(--muted)">
+        <span class="spinner"></span>&nbsp; Click refresh to load insights
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1332,6 +1455,183 @@ async function loadClientStatus() {
     }
   }));
   summary.textContent = loaded + '/' + CONFIG.CLIENTS.length + ' clients loaded';
+}
+
+// ═══════════════════════════════════════════
+// TAB 4 — INSIGHTS
+// ═══════════════════════════════════════════
+var _insightsLoaded = false;
+
+async function loadInsights() {
+  const body = document.getElementById('insights-body');
+  body.innerHTML =
+    '<div style="text-align:center;padding:80px 0;color:var(--muted);font-size:15px">' +
+    '<span class="spinner"></span>&nbsp; Crunching the numbers... &#128202;</div>';
+  _insightsLoaded = false;
+
+  const validClients = CONFIG.CLIENTS.filter(function(c) { return c.sheet_id && c.sheet_id !== 'SHEET_ID'; });
+
+  const results = await Promise.all(validClients.map(async function(client) {
+    try {
+      const resp = await fetch(CONFIG.APPS_SCRIPT_URL + '?sheet_id=' + encodeURIComponent(client.sheet_id));
+      const data = await resp.json();
+      const rows = (data.rows || []).filter(function(r) { return r[0] && String(r[0]).trim() !== ''; });
+      return { client: client, rows: rows, ok: rows.length > 0 };
+    } catch (e) {
+      return { client: client, rows: [], ok: false };
+    }
+  }));
+
+  const active = results.filter(function(r) { return r.ok; });
+
+  if (active.length === 0) {
+    body.innerHTML =
+      '<div style="text-align:center;padding:80px 0;color:var(--muted)">' +
+      '&#128683; No data yet \u2014 run the agent first</div>';
+    return;
+  }
+
+  function _n(v)  { const f = parseFloat(v); return isNaN(f) ? 0 : f; }
+  function _flag(v) { return String(v || '').trim().toUpperCase() === 'TRUE'; }
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  const summaries = active.map(function(r) {
+    const lastRow = r.rows[r.rows.length - 1];
+    let streak = 0;
+    for (let i = r.rows.length - 1; i >= 0; i--) {
+      const row = r.rows[i];
+      if (!_flag(row[10]) && !_flag(row[11]) && !_flag(row[16])) streak++;
+      else break;
+    }
+    return {
+      name:        r.client.name,
+      reviews:     _n(lastRow[1]),
+      newPatients: _n(lastRow[3]),
+      growthPct:   _n(lastRow[5]),
+      triggers:    _n(lastRow[7]),
+      hookFlag:    _flag(lastRow[10]),
+      offerFlag:   _flag(lastRow[11]),
+      cancelRate:  _n(lastRow[15]),
+      cancelFlag:  _flag(lastRow[16]),
+      streak:      streak,
+    };
+  });
+
+  // ── Section 1: Big Win Cards ───────────────────────────────────────────────
+  const byGrowth    = summaries.slice().sort(function(a,b) { return b.growthPct  - a.growthPct;  });
+  const byReviews   = summaries.slice().sort(function(a,b) { return b.reviews    - a.reviews;    });
+  const withPts     = summaries.filter(function(s) { return s.newPatients >= 5; });
+  const byCancel    = (withPts.length > 0 ? withPts : summaries).slice()
+                        .sort(function(a,b) { return a.cancelRate - b.cancelRate; });
+  const bestGrowth     = byGrowth[0];
+  const bestReviews    = byReviews[0];
+  const bestRetention  = byCancel[0];
+
+  const heroHtml =
+    '<div class="insights-hero-grid">' +
+      '<div class="insights-hero-card">' +
+        '<div class="insights-hero-title">&#128640; ' + esc(bestGrowth.name) + '</div>' +
+        '<div class="insights-hero-sub">' +
+          (bestGrowth.growthPct > 0 ? '+' + bestGrowth.growthPct.toFixed(1) + '% more bookings vs last week' : 'Leading in growth this week') +
+        '</div>' +
+        '<div style="font-size:11px;opacity:.7;margin-top:12px;text-transform:uppercase;letter-spacing:.5px">&#127942; Best Growth Story</div>' +
+      '</div>' +
+      '<div class="insights-hero-card">' +
+        '<div class="insights-hero-title">&#11088; ' + esc(bestReviews.name) + '</div>' +
+        '<div class="insights-hero-sub">+' + bestReviews.reviews + ' new Google Review' + (bestReviews.reviews !== 1 ? 's' : '') + ' this week</div>' +
+        '<div style="font-size:11px;opacity:.7;margin-top:12px;text-transform:uppercase;letter-spacing:.5px">&#127942; Review Machine</div>' +
+      '</div>' +
+      '<div class="insights-hero-card">' +
+        '<div class="insights-hero-title">&#128170; ' + esc(bestRetention.name) + '</div>' +
+        '<div class="insights-hero-sub">Only ' + (bestRetention.cancelRate * 100).toFixed(1) + '% cancellation rate</div>' +
+        '<div style="font-size:11px;opacity:.7;margin-top:12px;text-transform:uppercase;letter-spacing:.5px">&#127942; Retention Champion</div>' +
+      '</div>' +
+    '</div>';
+
+  // ── Section 4: Portfolio Snapshot (shown second — big numbers anchor the page) ──
+  const totalPatients  = summaries.reduce(function(s,r) { return s + r.newPatients; }, 0);
+  const totalReviews   = summaries.reduce(function(s,r) { return s + r.reviews; }, 0);
+  const posGrowth      = summaries.filter(function(s) { return s.growthPct > 0; });
+  const avgGrowth      = posGrowth.length > 0
+    ? (posGrowth.reduce(function(s,r) { return s + r.growthPct; }, 0) / posGrowth.length).toFixed(1)
+    : '0.0';
+  const fullPotential  = summaries.filter(function(s) { return !s.hookFlag && !s.offerFlag && !s.cancelFlag; }).length;
+
+  const snapshotHtml =
+    '<div class="insights-section-title">&#128200; This Week Across All Clinics</div>' +
+    '<div class="insights-section-sub">Combined portfolio performance</div>' +
+    '<div class="insights-stat-grid">' +
+      '<div class="insights-stat-box">' +
+        '<div class="insights-stat-value">' + totalPatients + '</div>' +
+        '<div class="insights-stat-label">new patients booked<br>across all clinics</div>' +
+      '</div>' +
+      '<div class="insights-stat-box">' +
+        '<div class="insights-stat-value">' + totalReviews + '</div>' +
+        '<div class="insights-stat-label">new Google Reviews<br>collected this week</div>' +
+      '</div>' +
+      '<div class="insights-stat-box">' +
+        '<div class="insights-stat-value">+' + avgGrowth + '%</div>' +
+        '<div class="insights-stat-label">average growth in bookings<br>(clinics trending up)</div>' +
+      '</div>' +
+      '<div class="insights-stat-box">' +
+        '<div class="insights-stat-value">' + fullPotential + '</div>' +
+        '<div class="insights-stat-label">clinics performing<br>at full potential</div>' +
+      '</div>' +
+    '</div>';
+
+  // ── Section 2: Growth Opportunities ────────────────────────────────────────
+  const flagged = summaries
+    .filter(function(s) { return s.hookFlag || s.offerFlag || s.cancelFlag; })
+    .slice(0, 3);
+
+  let oppHtml =
+    '<div class="insights-section-title">&#127919; Biggest Growth Opportunities This Week</div>' +
+    '<div class="insights-section-sub">Clients with the most room to improve</div>' +
+    '<div class="insights-cards-grid">';
+
+  if (flagged.length === 0) {
+    oppHtml += '<div style="color:var(--green);font-weight:600;grid-column:1/-1">&#9989; All clinics are hitting their targets this week!</div>';
+  } else {
+    flagged.forEach(function(s) {
+      const hookRatio    = s.newPatients > 0 ? (s.triggers / s.newPatients) : 0;
+      const potentialLift = Math.round((0.60 - Math.min(hookRatio, 0.60)) * 100);
+      const issue = s.hookFlag ? 'hook rate' : s.offerFlag ? 'offer conversion' : 'cancellation rate';
+      oppHtml +=
+        '<div class="insights-opp-card">' +
+          '<div class="insights-card-name">&#128200; ' + esc(s.name) + '</div>' +
+          '<div class="insights-card-detail">If ' + esc(s.name.split(' ')[0]) + ' improves their ' + issue +
+            (potentialLift > 0 ? ', they could book up to ' + potentialLift + '% more patients' : ', performance could reach target') +
+          '.</div>' +
+        '</div>';
+    });
+  }
+  oppHtml += '</div>';
+
+  // ── Section 3: Winning Streaks ──────────────────────────────────────────────
+  const streakers = summaries
+    .filter(function(s) { return s.streak >= 2; })
+    .sort(function(a,b) { return b.streak - a.streak; });
+
+  let streakHtml =
+    '<div class="insights-section-title">&#128293; On a Roll</div>' +
+    '<div class="insights-section-sub">Clinics with 2+ consecutive clean weeks</div>' +
+    '<div class="insights-cards-grid">';
+
+  if (streakers.length === 0) {
+    streakHtml += '<div style="color:var(--muted);grid-column:1/-1">No clinics with 2+ clean weeks yet \u2014 check back next week.</div>';
+  } else {
+    streakers.forEach(function(s) {
+      streakHtml +=
+        '<div class="insights-streak-card">' +
+          '<div class="insights-card-name">' + esc(s.name) + ' &#127942;</div>' +
+          '<div class="insights-card-detail">' + s.streak + ' week' + (s.streak !== 1 ? 's' : '') + ' of clean performance in a row</div>' +
+        '</div>';
+    });
+  }
+  streakHtml += '</div>';
+
+  body.innerHTML = heroHtml + snapshotHtml + oppHtml + streakHtml;
+  _insightsLoaded = true;
 }
 
 // ═══════════════════════════════════════════
