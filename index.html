@@ -650,6 +650,8 @@
     .hide-wp-col td:nth-child(4) { display: none; }
 
     /* INSIGHTS TAB */
+    @keyframes insightsFadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+    .insights-section { animation: insightsFadeIn .4s ease both; }
     .insights-hero-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -663,62 +665,36 @@
       padding: 28px 24px;
       box-shadow: 0 8px 32px rgba(124,109,181,.35);
     }
-    .insights-hero-title {
-      font-size: 22px;
-      font-weight: 800;
-      margin-bottom: 8px;
-      line-height: 1.2;
-    }
-    .insights-hero-sub {
-      font-size: 14px;
-      opacity: .85;
+    .insights-hero-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
+    .insights-hero-sub   { font-size: 14px; opacity: .88; margin-bottom: 6px; }
+    .insights-hero-sub2  { font-size: 12px; opacity: .65; }
+    .insights-hero-badge {
+      font-size: 10px; opacity: .7; margin-top: 14px;
+      text-transform: uppercase; letter-spacing: .5px;
     }
     .insights-section-title {
-      font-size: 18px;
-      font-weight: 700;
-      margin: 0 0 6px;
-      color: var(--text);
+      font-size: 18px; font-weight: 700; margin: 0 0 4px; color: var(--text);
     }
-    .insights-section-sub {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 18px;
-    }
+    .insights-section-sub  { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
     .insights-cards-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 16px;
       margin-bottom: 36px;
     }
-    .insights-opp-card {
+    .insights-glass {
       background: rgba(255,255,255,.82);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       border: 1px solid rgba(168,153,219,.2);
-      border-left: 4px solid #f59e0b;
       border-radius: 14px;
       padding: 18px 20px;
     }
-    .insights-streak-card {
-      background: rgba(255,255,255,.82);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(168,153,219,.2);
-      border-left: 4px solid #22c55e;
-      border-radius: 14px;
-      padding: 18px 20px;
-    }
-    .insights-card-name {
-      font-weight: 700;
-      font-size: 15px;
-      margin-bottom: 6px;
-      color: var(--text);
-    }
-    .insights-card-detail {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
+    .insights-opp-card    { border-left: 4px solid #f59e0b; }
+    .insights-streak-card { border-left: 4px solid #22c55e; }
+    .insights-trend-card  { border-left: 4px solid #A899DB; }
+    .insights-card-name   { font-weight: 700; font-size: 15px; margin-bottom: 6px; color: var(--text); }
+    .insights-card-detail { font-size: 13px; color: var(--muted); line-height: 1.5; }
     .insights-stat-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -734,25 +710,46 @@
       padding: 22px 18px;
       text-align: center;
     }
-    .insights-stat-value {
-      font-size: 36px;
-      font-weight: 800;
-      color: #A899DB;
-      line-height: 1;
-      margin-bottom: 8px;
+    .insights-stat-value { font-size: 34px; font-weight: 800; color: #A899DB; line-height: 1; margin-bottom: 8px; }
+    .insights-stat-label { font-size: 12px; color: var(--muted); line-height: 1.4; }
+    .insights-stat-trend { font-size: 12px; margin-top: 6px; font-weight: 600; }
+    .trend-up   { color: #22c55e; }
+    .trend-down { color: #ef4444; }
+    .trend-flat { color: var(--muted); }
+    /* History table */
+    .insights-history-wrap { overflow-x: auto; margin-bottom: 36px; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    .insights-history-table { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 13px; }
+    .insights-history-table th {
+      background: #7c6db5; color: #fff; padding: 10px 14px;
+      text-align: left; white-space: nowrap; position: sticky; top: 0; z-index: 2;
     }
-    .insights-stat-label {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.4;
+    .insights-history-table th:first-child { position: sticky; left: 0; z-index: 3; background: #6b5ea8; }
+    .insights-history-table td { padding: 8px 14px; border-bottom: 1px solid rgba(168,153,219,.12); white-space: nowrap; }
+    .insights-history-table td:first-child {
+      position: sticky; left: 0; background: rgba(255,255,255,.96);
+      font-weight: 600; z-index: 1; border-right: 1px solid rgba(168,153,219,.2);
     }
+    .insights-history-table tr:nth-child(even) td { background: rgba(168,153,219,.04); }
+    .insights-history-table tr:nth-child(even) td:first-child { background: rgba(245,243,255,.98); }
+    .cell-clean    { background: rgba(34,197,94,.10) !important; }
+    .cell-flagged  { background: rgba(239,68,68,.08) !important; }
+    /* Records */
+    .insights-records-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 36px; }
+    .insights-record-card {
+      background: linear-gradient(135deg, #7c6db5, #A899DB);
+      color:#fff; border-radius:16px; padding:20px 18px;
+      box-shadow: 0 6px 20px rgba(124,109,181,.3);
+    }
+    .insights-record-val   { font-size:28px; font-weight:800; margin-bottom:4px; }
+    .insights-record-label { font-size:12px; opacity:.8; }
+    .insights-record-who   { font-size:13px; font-weight:700; margin-top:10px; }
+    .insights-record-when  { font-size:11px; opacity:.65; margin-top:2px; }
     @media (max-width: 900px) {
-      .insights-hero-grid,
-      .insights-cards-grid { grid-template-columns: 1fr; }
-      .insights-stat-grid   { grid-template-columns: repeat(2, 1fr); }
+      .insights-hero-grid, .insights-cards-grid { grid-template-columns: 1fr; }
+      .insights-stat-grid, .insights-records-grid { grid-template-columns: repeat(2,1fr); }
     }
     @media (max-width: 500px) {
-      .insights-stat-grid { grid-template-columns: 1fr; }
+      .insights-stat-grid, .insights-records-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -1490,7 +1487,7 @@ async function loadInsights() {
   const body = document.getElementById('insights-body');
   body.innerHTML =
     '<div style="text-align:center;padding:80px 0;color:var(--muted);font-size:15px">' +
-    '<span class="spinner"></span>&nbsp; Crunching the numbers... &#128202;</div>';
+    '&#128260; Analyzing all clinic data...</div>';
   _insightsLoaded = false;
 
   const validClients = CONFIG.CLIENTS.filter(function(c) { return c.sheet_id && c.sheet_id !== 'SHEET_ID'; });
@@ -1515,146 +1512,338 @@ async function loadInsights() {
     return;
   }
 
-  function _n(v)  { const f = parseFloat(v); return isNaN(f) ? 0 : f; }
+  function _n(v)    { const f = parseFloat(v); return isNaN(f) ? 0 : f; }
   function _flag(v) { return String(v || '').trim().toUpperCase() === 'TRUE'; }
-  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function esc(s)   { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function pct(v)   { return (v * 100).toFixed(1) + '%'; }
+  function trendCls(v) { return v > 0.05 ? 'trend-up' : v < -0.05 ? 'trend-down' : 'trend-flat'; }
+  function trendArrow(v) { return v > 0.05 ? '\u2191' : v < -0.05 ? '\u2193' : '\u2192'; }
 
+  // Build per-client summary using ALL rows
   const summaries = active.map(function(r) {
-    const lastRow = r.rows[r.rows.length - 1];
+    const rows    = r.rows;
+    const last    = rows[rows.length - 1];
+    const prev    = rows.length >= 2 ? rows[rows.length - 2] : null;
+
     let streak = 0;
-    for (let i = r.rows.length - 1; i >= 0; i--) {
-      const row = r.rows[i];
-      if (!_flag(row[10]) && !_flag(row[11]) && !_flag(row[16])) streak++;
-      else break;
+    let streakSince = '';
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const row = rows[i];
+      if (!_flag(row[10]) && !_flag(row[11]) && !_flag(row[16])) {
+        streak++;
+        streakSince = String(row[0] || '');
+      } else break;
     }
+
+    const lastPatients  = _n(last[3]);
+    const prevPatients  = prev ? _n(prev[3]) : 0;
+    const patientDelta  = prevPatients > 0 ? (lastPatients - prevPatients) / prevPatients : 0;
+    const lastReviews   = _n(last[1]);
+    const prevReviews   = prev ? _n(prev[1]) : 0;
+    const reviewDelta   = prevReviews > 0 ? (lastReviews - prevReviews) / prevReviews : 0;
+    const lastCancel    = _n(last[15]);
+    const prevCancel    = prev ? _n(prev[15]) : 0;
+    const cancelDelta   = prevCancel > 0 ? (lastCancel - prevCancel) / prevCancel : 0;
+    const totalReviews  = _n(last[30]);
+
+    const hookFlag   = _flag(last[10]);
+    const offerFlag  = _flag(last[11]);
+    const cancelFlag = _flag(last[16]);
+    const prevHook   = prev ? _flag(prev[10]) : false;
+    const prevOffer  = prev ? _flag(prev[11]) : false;
+    const prevCancel2 = prev ? _flag(prev[16]) : false;
+    const newFlag    = (!prevHook && hookFlag) || (!prevOffer && offerFlag) || (!prevCancel2 && cancelFlag);
+    const growthPct  = _n(last[5]);
+
+    // Trend status: Improving / Declining / Stable
+    let trendStatus = 'stable';
+    if (patientDelta > 0.05 && !newFlag) trendStatus = 'improving';
+    else if (patientDelta < -0.05 || newFlag) trendStatus = 'declining';
+
     return {
-      name:        r.client.name,
-      reviews:     _n(lastRow[1]),
-      newPatients: _n(lastRow[3]),
-      growthPct:   _n(lastRow[5]),
-      triggers:    _n(lastRow[7]),
-      hookFlag:    _flag(lastRow[10]),
-      offerFlag:   _flag(lastRow[11]),
-      cancelRate:  _n(lastRow[15]),
-      cancelFlag:  _flag(lastRow[16]),
-      streak:      streak,
+      name:         r.client.name,
+      rows:         rows,
+      lastRow:      last,
+      prevRow:      prev,
+      lastPatients: lastPatients,
+      prevPatients: prevPatients,
+      patientDelta: patientDelta,
+      lastReviews:  lastReviews,
+      prevReviews:  prevReviews,
+      reviewDelta:  reviewDelta,
+      lastCancel:   lastCancel,
+      prevCancel:   prevCancel,
+      cancelDelta:  cancelDelta,
+      totalReviews: totalReviews,
+      growthPct:    growthPct,
+      triggers:     _n(last[7]),
+      hookFlag:     hookFlag,
+      offerFlag:    offerFlag,
+      cancelFlag:   cancelFlag,
+      clean:        !hookFlag && !offerFlag && !cancelFlag,
+      streak:       streak,
+      streakSince:  streakSince,
+      trendStatus:  trendStatus,
     };
   });
 
-  // ── Section 1: Big Win Cards ───────────────────────────────────────────────
-  const byGrowth    = summaries.slice().sort(function(a,b) { return b.growthPct  - a.growthPct;  });
-  const byReviews   = summaries.slice().sort(function(a,b) { return b.reviews    - a.reviews;    });
-  const withPts     = summaries.filter(function(s) { return s.newPatients >= 5; });
-  const byCancel    = (withPts.length > 0 ? withPts : summaries).slice()
-                        .sort(function(a,b) { return a.cancelRate - b.cancelRate; });
-  const bestGrowth     = byGrowth[0];
-  const bestReviews    = byReviews[0];
-  const bestRetention  = byCancel[0];
+  // ── Section 1: Portfolio Pulse ────────────────────────────────────────────
+  const totPats    = summaries.reduce(function(s,r) { return s + r.lastPatients; }, 0);
+  const prevTotPats= summaries.reduce(function(s,r) { return s + r.prevPatients; }, 0);
+  const patsOverall= prevTotPats > 0 ? (totPats - prevTotPats) / prevTotPats : 0;
+
+  const totRevs    = summaries.reduce(function(s,r) { return s + r.lastReviews; }, 0);
+  const prevTotRevs= summaries.reduce(function(s,r) { return s + r.prevReviews; }, 0);
+  const revsOverall= prevTotRevs > 0 ? (totRevs - prevTotRevs) / prevTotRevs : 0;
+
+  const fullPot    = summaries.filter(function(s) { return s.clean; }).length;
+  const potColor   = fullPot > 15 ? '#22c55e' : fullPot > 8 ? '#f59e0b' : '#ef4444';
+
+  const cancelVals = summaries.filter(function(s) { return s.lastCancel > 0; });
+  const avgCancel  = cancelVals.length > 0
+    ? cancelVals.reduce(function(s,r) { return s + r.lastCancel; }, 0) / cancelVals.length : 0;
+  const prevCancelVals = summaries.filter(function(s) { return s.prevCancel > 0; });
+  const prevAvgCancel  = prevCancelVals.length > 0
+    ? prevCancelVals.reduce(function(s,r) { return s + r.prevCancel; }, 0) / prevCancelVals.length : 0;
+  const cancelOverall  = prevAvgCancel > 0 ? (avgCancel - prevAvgCancel) / prevAvgCancel : 0;
+
+  function pulseBox(val, label, trend, extraStyle) {
+    const cls = trendCls(trend);
+    const arr = trendArrow(trend);
+    return '<div class="insights-stat-box" ' + (extraStyle ? 'style="' + extraStyle + '"' : '') + '>' +
+      '<div class="insights-stat-value">' + val + '</div>' +
+      '<div class="insights-stat-label">' + label + '</div>' +
+      (trend !== null ? '<div class="insights-stat-trend ' + cls + '">' + arr + ' ' + Math.abs((trend*100).toFixed(1)) + '% vs last week</div>' : '') +
+    '</div>';
+  }
+
+  const pulseHtml =
+    '<div class="insights-section insights-section-title" style="margin-bottom:6px">&#9889; Portfolio Pulse \u2014 This Week</div>' +
+    '<div class="insights-section-sub" style="margin-bottom:16px">Live totals across all ' + active.length + ' active clinics</div>' +
+    '<div class="insights-section insights-stat-grid" style="margin-bottom:40px">' +
+      pulseBox(totPats, 'total new patients<br>this week', patsOverall, '') +
+      pulseBox(totRevs, 'new Google Reviews<br>collected', revsOverall, '') +
+      '<div class="insights-stat-box">' +
+        '<div class="insights-stat-value" style="color:' + potColor + '">' + fullPot + ' / ' + active.length + '</div>' +
+        '<div class="insights-stat-label">clinics at<br>full potential</div>' +
+      '</div>' +
+      pulseBox((avgCancel*100).toFixed(1) + '%', 'average cancellation<br>rate this week', cancelOverall !== 0 ? -cancelOverall : null, '') +
+    '</div>';
+
+  // ── Section 2: Big Win Hero Cards ─────────────────────────────────────────
+  const byGrowth  = summaries.slice().sort(function(a,b) { return b.growthPct - a.growthPct; });
+  const byTotRev  = summaries.slice().sort(function(a,b) { return b.totalReviews - a.totalReviews; });
+  const byStreak  = summaries.slice().sort(function(a,b) { return b.streak - a.streak; });
+  const bestGrowth = byGrowth[0];
+  const bestRevs   = byTotRev[0];
+  const bestStreak = byStreak[0];
 
   const heroHtml =
-    '<div class="insights-hero-grid">' +
+    '<div class="insights-section insights-hero-grid" style="margin-bottom:40px">' +
       '<div class="insights-hero-card">' +
         '<div class="insights-hero-title">&#128640; ' + esc(bestGrowth.name) + '</div>' +
-        '<div class="insights-hero-sub">' +
-          (bestGrowth.growthPct > 0 ? '+' + bestGrowth.growthPct.toFixed(1) + '% more bookings vs last week' : 'Leading in growth this week') +
-        '</div>' +
-        '<div style="font-size:11px;opacity:.7;margin-top:12px;text-transform:uppercase;letter-spacing:.5px">&#127942; Best Growth Story</div>' +
+        '<div class="insights-hero-sub">' + (bestGrowth.growthPct > 0 ? '+' + (bestGrowth.growthPct*100).toFixed(1) + '% more bookings this week' : 'Leading in growth this week') + '</div>' +
+        '<div class="insights-hero-sub2">' + bestGrowth.lastPatients + ' new patients vs ' + bestGrowth.prevPatients + ' last week</div>' +
+        '<div class="insights-hero-badge">&#127942; Growth Champion</div>' +
       '</div>' +
       '<div class="insights-hero-card">' +
-        '<div class="insights-hero-title">&#11088; ' + esc(bestReviews.name) + '</div>' +
-        '<div class="insights-hero-sub">+' + bestReviews.reviews + ' new Google Review' + (bestReviews.reviews !== 1 ? 's' : '') + ' this week</div>' +
-        '<div style="font-size:11px;opacity:.7;margin-top:12px;text-transform:uppercase;letter-spacing:.5px">&#127942; Review Machine</div>' +
+        '<div class="insights-hero-title">&#11088; ' + esc(bestRevs.name) + '</div>' +
+        '<div class="insights-hero-sub">' + (bestRevs.totalReviews > 0 ? bestRevs.totalReviews + ' total Google Reviews' : '+' + bestRevs.lastReviews + ' new reviews this week') + '</div>' +
+        '<div class="insights-hero-sub2">+' + bestRevs.lastReviews + ' new review' + (bestRevs.lastReviews !== 1 ? 's' : '') + ' this week</div>' +
+        '<div class="insights-hero-badge">&#127942; Review Machine</div>' +
       '</div>' +
       '<div class="insights-hero-card">' +
-        '<div class="insights-hero-title">&#128170; ' + esc(bestRetention.name) + '</div>' +
-        '<div class="insights-hero-sub">Only ' + (bestRetention.cancelRate * 100).toFixed(1) + '% cancellation rate</div>' +
-        '<div style="font-size:11px;opacity:.7;margin-top:12px;text-transform:uppercase;letter-spacing:.5px">&#127942; Retention Champion</div>' +
+        '<div class="insights-hero-title">&#127942; ' + esc(bestStreak.name) + '</div>' +
+        '<div class="insights-hero-sub">' + bestStreak.streak + ' consecutive clean week' + (bestStreak.streak !== 1 ? 's' : '') + '</div>' +
+        (bestStreak.streakSince ? '<div class="insights-hero-sub2">Zero flags since ' + esc(bestStreak.streakSince) + '</div>' : '') +
+        '<div class="insights-hero-badge">&#127942; Most Consistent</div>' +
       '</div>' +
     '</div>';
 
-  // ── Section 4: Portfolio Snapshot (shown second — big numbers anchor the page) ──
-  const totalPatients  = summaries.reduce(function(s,r) { return s + r.newPatients; }, 0);
-  const totalReviews   = summaries.reduce(function(s,r) { return s + r.reviews; }, 0);
-  const posGrowth      = summaries.filter(function(s) { return s.growthPct > 0; });
-  const avgGrowth      = posGrowth.length > 0
-    ? (posGrowth.reduce(function(s,r) { return s + r.growthPct; }, 0) / posGrowth.length).toFixed(1)
-    : '0.0';
-  const fullPotential  = summaries.filter(function(s) { return !s.hookFlag && !s.offerFlag && !s.cancelFlag; }).length;
+  // ── Section 3: Trend Analysis ─────────────────────────────────────────────
+  const withHistory = summaries.filter(function(s) { return s.prevRow !== null; });
+  const sorted3 = withHistory.slice().sort(function(a,b) {
+    const order = { improving: 0, stable: 1, declining: 2 };
+    return (order[a.trendStatus] || 1) - (order[b.trendStatus] || 1);
+  });
 
-  const snapshotHtml =
-    '<div class="insights-section-title">&#128200; This Week Across All Clinics</div>' +
-    '<div class="insights-section-sub">Combined portfolio performance</div>' +
-    '<div class="insights-stat-grid">' +
-      '<div class="insights-stat-box">' +
-        '<div class="insights-stat-value">' + totalPatients + '</div>' +
-        '<div class="insights-stat-label">new patients booked<br>across all clinics</div>' +
-      '</div>' +
-      '<div class="insights-stat-box">' +
-        '<div class="insights-stat-value">' + totalReviews + '</div>' +
-        '<div class="insights-stat-label">new Google Reviews<br>collected this week</div>' +
-      '</div>' +
-      '<div class="insights-stat-box">' +
-        '<div class="insights-stat-value">+' + avgGrowth + '%</div>' +
-        '<div class="insights-stat-label">average growth in bookings<br>(clinics trending up)</div>' +
-      '</div>' +
-      '<div class="insights-stat-box">' +
-        '<div class="insights-stat-value">' + fullPotential + '</div>' +
-        '<div class="insights-stat-label">clinics performing<br>at full potential</div>' +
-      '</div>' +
-    '</div>';
+  let trendHtml =
+    '<div class="insights-section insights-section-title">&#128200; Week-Over-Week Trends</div>' +
+    '<div class="insights-section-sub">Comparing latest week vs previous week for each clinic</div>' +
+    '<div class="insights-section insights-cards-grid" style="margin-bottom:40px">';
 
-  // ── Section 2: Growth Opportunities ────────────────────────────────────────
-  const flagged = summaries
-    .filter(function(s) { return s.hookFlag || s.offerFlag || s.cancelFlag; })
-    .slice(0, 3);
-
-  let oppHtml =
-    '<div class="insights-section-title">&#127919; Biggest Growth Opportunities This Week</div>' +
-    '<div class="insights-section-sub">Clients with the most room to improve</div>' +
-    '<div class="insights-cards-grid">';
-
-  if (flagged.length === 0) {
-    oppHtml += '<div style="color:var(--green);font-weight:600;grid-column:1/-1">&#9989; All clinics are hitting their targets this week!</div>';
+  if (withHistory.length === 0) {
+    trendHtml += '<div style="color:var(--muted);grid-column:1/-1">Need at least 2 weeks of data to show trends.</div>';
   } else {
-    flagged.forEach(function(s) {
-      const hookRatio    = s.newPatients > 0 ? (s.triggers / s.newPatients) : 0;
-      const potentialLift = Math.round((0.60 - Math.min(hookRatio, 0.60)) * 100);
-      const issue = s.hookFlag ? 'hook rate' : s.offerFlag ? 'offer conversion' : 'cancellation rate';
-      oppHtml +=
-        '<div class="insights-opp-card">' +
-          '<div class="insights-card-name">&#128200; ' + esc(s.name) + '</div>' +
-          '<div class="insights-card-detail">If ' + esc(s.name.split(' ')[0]) + ' improves their ' + issue +
-            (potentialLift > 0 ? ', they could book up to ' + potentialLift + '% more patients' : ', performance could reach target') +
-          '.</div>' +
+    sorted3.forEach(function(s) {
+      const badge = s.trendStatus === 'improving'
+        ? '<span style="color:#22c55e;font-weight:700">&#128994; Improving</span>'
+        : s.trendStatus === 'declining'
+        ? '<span style="color:#ef4444;font-weight:700">&#128308; Declining</span>'
+        : '<span style="color:var(--muted);font-weight:700">&#9898; Stable</span>';
+      const patArrow  = trendArrow(s.patientDelta);
+      const patCls    = trendCls(s.patientDelta);
+      const revArrow  = s.lastReviews >= s.prevReviews ? '\u2191' : '\u2193';
+      trendHtml +=
+        '<div class="insights-glass insights-trend-card">' +
+          '<div class="insights-card-name">' + esc(s.name) + '</div>' +
+          '<div class="insights-card-detail">' +
+            'New Patients: <span class="' + patCls + '">' + patArrow + ' ' +
+              s.lastPatients + ' <small>(' + (s.patientDelta >= 0 ? '+' : '') + (s.patientDelta*100).toFixed(1) + '%)</small></span><br>' +
+            'Reviews: ' + revArrow + ' ' + s.lastReviews + ' this week' +
+          '</div>' +
+          '<div style="margin-top:8px">' + badge + '</div>' +
         '</div>';
     });
   }
-  oppHtml += '</div>';
+  trendHtml += '</div>';
 
-  // ── Section 3: Winning Streaks ──────────────────────────────────────────────
-  const streakers = summaries
-    .filter(function(s) { return s.streak >= 2; })
+  // ── Section 4: Winning Streaks ────────────────────────────────────────────
+  const streakers = summaries.filter(function(s) { return s.streak >= 2; })
     .sort(function(a,b) { return b.streak - a.streak; });
 
   let streakHtml =
-    '<div class="insights-section-title">&#128293; On a Roll</div>' +
-    '<div class="insights-section-sub">Clinics with 2+ consecutive clean weeks</div>' +
-    '<div class="insights-cards-grid">';
+    '<div class="insights-section insights-section-title">&#128293; On a Roll \u2014 Clean Performance Streaks</div>' +
+    '<div class="insights-section-sub">Clinics with 2+ consecutive weeks of zero flags</div>' +
+    '<div class="insights-section insights-cards-grid" style="margin-bottom:40px">';
 
   if (streakers.length === 0) {
-    streakHtml += '<div style="color:var(--muted);grid-column:1/-1">No clinics with 2+ clean weeks yet \u2014 check back next week.</div>';
+    streakHtml += '<div style="color:var(--muted);grid-column:1/-1">Keep pushing \u2014 streaks are building! &#128170;</div>';
   } else {
     streakers.forEach(function(s) {
       streakHtml +=
-        '<div class="insights-streak-card">' +
+        '<div class="insights-glass insights-streak-card">' +
           '<div class="insights-card-name">' + esc(s.name) + ' &#127942;</div>' +
-          '<div class="insights-card-detail">' + s.streak + ' week' + (s.streak !== 1 ? 's' : '') + ' of clean performance in a row</div>' +
+          '<div class="insights-card-detail">' + s.streak + ' week' + (s.streak !== 1 ? 's' : '') + ' straight, no flags' +
+            (s.streakSince ? '<br><small>Since ' + esc(s.streakSince) + '</small>' : '') +
+          '</div>' +
         '</div>';
     });
   }
   streakHtml += '</div>';
 
-  body.innerHTML = heroHtml + snapshotHtml + oppHtml + streakHtml;
+  // ── Section 5: Growth Opportunities ──────────────────────────────────────
+  const flagged = summaries.filter(function(s) { return s.hookFlag || s.offerFlag || s.cancelFlag; }).slice(0, 3);
+
+  let oppHtml =
+    '<div class="insights-section insights-section-title">&#127919; Biggest Opportunities Right Now</div>' +
+    '<div class="insights-section-sub">Actionable insights for the clinics with the most room to grow</div>' +
+    '<div class="insights-section insights-cards-grid" style="margin-bottom:40px">';
+
+  if (flagged.length === 0) {
+    oppHtml += '<div style="color:#22c55e;font-weight:600;grid-column:1/-1">&#9989; All clinics are hitting their targets this week!</div>';
+  } else {
+    flagged.forEach(function(s) {
+      let detail = '';
+      if (s.hookFlag) {
+        const hookRatio = s.lastPatients > 0 ? s.triggers / s.lastPatients : 0;
+        const potLift   = Math.round(Math.max(0, (0.60 - Math.min(hookRatio, 0.60)) * 100));
+        detail = esc(s.name.split(' ')[0]) + ' has a hook rate of ' +
+          pct(hookRatio) + '. Fixing this could unlock up to ' + potLift + '% more bookings based on their trigger link volume.';
+      } else if (s.offerFlag) {
+        const extraRevs = Math.max(0, Math.round(s.triggers * 0.7 - s.lastReviews));
+        detail = 'Only ' + pct(s.triggers > 0 ? s.lastReviews / s.triggers : 0) + ' of patients are leaving reviews. ' +
+          'With ' + s.triggers + ' trigger links, there\u2019s room for ' + extraRevs + ' more reviews this week.';
+      } else {
+        detail = 'Cancellation rate is at ' + pct(s.lastCancel) + ' — above the 25% threshold. ' +
+          'Reducing cancellations is the fastest path to higher weekly patient counts.';
+      }
+      oppHtml +=
+        '<div class="insights-glass insights-opp-card">' +
+          '<div class="insights-card-name">&#128200; ' + esc(s.name) + '</div>' +
+          '<div class="insights-card-detail">' + detail + '</div>' +
+        '</div>';
+    });
+  }
+  oppHtml += '</div>';
+
+  // ── Section 6: 4-Week History Table ──────────────────────────────────────
+  // Collect unique week labels across all clients (up to last 4)
+  const allWeekSets = {};
+  summaries.forEach(function(s) {
+    s.rows.forEach(function(r) { allWeekSets[String(r[0]).trim()] = true; });
+  });
+  const allWeeks = Object.keys(allWeekSets).slice(-4); // last 4
+
+  const sortedByName = summaries.slice().sort(function(a,b) { return a.name.localeCompare(b.name); });
+
+  let tableHtml =
+    '<div class="insights-section insights-section-title">&#128202; All Clients \u2014 4-Week Performance History</div>' +
+    '<div class="insights-section-sub">New Patients / New Reviews / Status for each week</div>' +
+    '<div class="insights-section insights-history-wrap" style="margin-bottom:40px">' +
+    '<table class="insights-history-table"><thead><tr>' +
+    '<th>Clinic</th>' +
+    allWeeks.map(function(w) { return '<th>' + esc(w) + '</th>'; }).join('') +
+    '</tr></thead><tbody>';
+
+  sortedByName.forEach(function(s) {
+    const rowMap = {};
+    s.rows.forEach(function(r) { rowMap[String(r[0]).trim()] = r; });
+    tableHtml += '<tr><td>' + esc(s.name) + '</td>';
+    allWeeks.forEach(function(w) {
+      const r = rowMap[w];
+      if (!r) {
+        tableHtml += '<td style="color:var(--muted)">&#9898; \u2014</td>';
+      } else {
+        const h = _flag(r[10]), o = _flag(r[11]), c = _flag(r[16]);
+        const bad = h || o || c;
+        const emoji = bad ? '&#128308;' : '&#128994;';
+        const cls   = bad ? 'cell-flagged' : 'cell-clean';
+        tableHtml += '<td class="' + cls + '">' + emoji + ' ' + _n(r[3]) + 'pts / ' + _n(r[1]) + 'rev</td>';
+      }
+    });
+    tableHtml += '</tr>';
+  });
+  tableHtml += '</tbody></table></div>';
+
+  // ── Section 7: All-Time Records ───────────────────────────────────────────
+  let recPats = { val: 0, name: '', week: '' };
+  let recRevs = { val: 0, name: '', week: '' };
+  let recCancel = { val: Infinity, name: '', week: '' };
+  let recGrowth = { val: -Infinity, name: '', week: '' };
+
+  summaries.forEach(function(s) {
+    s.rows.forEach(function(r) {
+      const pts = _n(r[3]), rev = _n(r[1]), can = _n(r[15]), grw = _n(r[5]);
+      const wk  = String(r[0] || '');
+      if (pts > recPats.val)   { recPats   = { val: pts, name: s.name, week: wk }; }
+      if (rev > recRevs.val)   { recRevs   = { val: rev, name: s.name, week: wk }; }
+      if (can > 0 && can < recCancel.val) { recCancel = { val: can, name: s.name, week: wk }; }
+      if (grw > recGrowth.val) { recGrowth = { val: grw, name: s.name, week: wk }; }
+    });
+  });
+
+  const recordsHtml =
+    '<div class="insights-section insights-section-title">&#127885; All-Time Bests Across All Clinics</div>' +
+    '<div class="insights-section-sub">Records set across every week of data</div>' +
+    '<div class="insights-section insights-records-grid" style="margin-bottom:24px">' +
+      '<div class="insights-record-card">' +
+        '<div class="insights-record-val">&#127939; ' + recPats.val + '</div>' +
+        '<div class="insights-record-label">Most new patients in a single week</div>' +
+        '<div class="insights-record-who">' + esc(recPats.name) + '</div>' +
+        '<div class="insights-record-when">' + esc(recPats.week) + '</div>' +
+      '</div>' +
+      '<div class="insights-record-card">' +
+        '<div class="insights-record-val">&#11088; ' + recRevs.val + '</div>' +
+        '<div class="insights-record-label">Most new Google Reviews in a single week</div>' +
+        '<div class="insights-record-who">' + esc(recRevs.name) + '</div>' +
+        '<div class="insights-record-when">' + esc(recRevs.week) + '</div>' +
+      '</div>' +
+      '<div class="insights-record-card">' +
+        '<div class="insights-record-val">&#128170; ' + (recCancel.val < Infinity ? pct(recCancel.val) : '\u2014') + '</div>' +
+        '<div class="insights-record-label">Lowest cancellation rate ever</div>' +
+        '<div class="insights-record-who">' + esc(recCancel.name) + '</div>' +
+        '<div class="insights-record-when">' + esc(recCancel.week) + '</div>' +
+      '</div>' +
+      '<div class="insights-record-card">' +
+        '<div class="insights-record-val">&#128640; +' + (recGrowth.val > -Infinity ? (recGrowth.val*100).toFixed(1) : '0') + '%</div>' +
+        '<div class="insights-record-label">Highest single-week growth ever</div>' +
+        '<div class="insights-record-who">' + esc(recGrowth.name) + '</div>' +
+        '<div class="insights-record-when">' + esc(recGrowth.week) + '</div>' +
+      '</div>' +
+    '</div>';
+
+  body.innerHTML = pulseHtml + heroHtml + trendHtml + streakHtml + oppHtml + tableHtml + recordsHtml;
   _insightsLoaded = true;
 }
 
