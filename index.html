@@ -1585,10 +1585,18 @@ async function loadInsights() {
     const newFlag    = (!prevHook && hookFlag) || (!prevOffer && offerFlag) || (!prevCancel2 && cancelFlag);
     const growthPct  = _n(last[5]);
 
-    // Trend status: Improving / Declining / Stable
-    let trendStatus = 'stable';
-    if (patientDelta > 0.05 && !newFlag) trendStatus = 'improving';
-    else if (patientDelta < -0.05 || newFlag) trendStatus = 'declining';
+    // Smart phase mapping
+    const _pUp   = patientDelta > 0.05;
+    const _pDown = patientDelta < -0.05;
+    const _rUp   = reviewDelta > 0;
+    const _rDown = reviewDelta < 0;
+    let trendStatus;
+    if      (_pUp   &&  _rUp)             trendStatus = 'accelerating';
+    else if (_pUp   && !_rUp)             trendStatus = 'growth_phase';
+    else if (!_pUp  && !_pDown && _rUp)   trendStatus = 'brand_deepening';
+    else if (_pDown && !_rDown)           trendStatus = 'coiled_spring';
+    else if (_pDown &&  _rDown)           trendStatus = 'optimization_window';
+    else                                  trendStatus = 'consolidating';
 
     return {
       name:         r.client.name,
@@ -1775,10 +1783,74 @@ async function loadInsights() {
       '</div>' +
       '<div style="display:none"><span id="ammo-frame-t1">' + f1 + '</span><span id="ammo-frame-t2">' + f2 + '</span><span id="ammo-frame-t3">' + f3 + '</span></div>';
 
+    // Block 0 — Micro-Win PR Generator (always expanded)
+    var _mwCtr = 0;
+    function mwCopy(text) {
+      _mwCtr++;
+      var bid='mw-btn-'+_mwCtr, tid='mw-txt-'+_mwCtr;
+      return '<div style="display:none" id="'+tid+'">'+text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>'+
+        '<button class="ammo-copy-btn" id="'+bid+'" onclick="(function(){'+
+        'var t=document.getElementById(\''+tid+'\');navigator.clipboard.writeText(t.textContent).then(function(){'+
+        'var b=document.getElementById(\''+bid+'\');b.textContent=\'\u2705 Copied!\';'+
+        'setTimeout(function(){b.textContent=\'\uD83D\uDCCB Copy\';},2000);});})();">\uD83D\uDCCB Copy</button>';
+    }
+    var _mwWins = [];
+    summaries.forEach(function(s) {
+      var w = null;
+      if (!w && s.totalReviews > 0 && !s.hookFlag && !s.offerFlag) {
+        w = { ar: '\u2728 '+s.name+' \u2014 \u0623\u062F\u0627\u0621 \u0645\u062B\u0627\u0644\u064A \u0647\u0630\u0627 \u0627\u0644\u0623\u0633\u0628\u0648\u0639! '+s.totalReviews+' \u062A\u0642\u064A\u064A\u0645 \u062C\u0648\u062C\u0644 \u0648\u0644\u0627 \u0641\u0644\u0627\u062C \u0648\u0627\u062D\u062F \u2764\uFE0F',
+              en: '\u2728 '+s.name+' maintained perfect performance with '+s.totalReviews+' total reviews and zero flags.' };
+      }
+      if (!w && s.prevPatients > 0 && s.lastPatients > s.prevPatients * 1.3) {
+        var _gp = Math.round((s.lastPatients - s.prevPatients) / s.prevPatients * 100);
+        w = { ar: '\uD83D\uDCC8 '+s.name+' \u2014 '+s.lastPatients+' \u0645\u0631\u064A\u0636 \u062C\u062F\u064A\u062F \u0647\u0627\u0644\u0623\u0633\u0628\u0648\u0639! \u0627\u0631\u062A\u0641\u0627\u0639 '+_gp+'% \u0639\u0646 \u0627\u0644\u0623\u0633\u0628\u0648\u0639 \u0627\u0644\u0644\u064A \u0641\u0627\u062A \uD83D\uDE80',
+              en: '\uD83D\uDCC8 '+s.name+' just had their best booking week \u2014 '+s.lastPatients+' new patients, up '+_gp+'% from last week.' };
+      }
+      if (!w && s.lastReviews > 0 && s.lastCancel === 0) {
+        w = { ar: '\uD83D\uDCAB '+s.name+' \u2014 '+s.lastReviews+' \u062A\u0642\u064A\u064A\u0645 \u062C\u062F\u064A\u062F \u0648\u0644\u0627 \u0625\u0644\u063A\u0627\u0621 \u0648\u0627\u062D\u062F \u0647\u0627\u0644\u0623\u0633\u0628\u0648\u0639 \u2014 \u062A\u0646\u0641\u064A\u0630 \u0645\u062B\u0627\u0644\u064A \u2764\uFE0F',
+              en: '\uD83D\uDCAB '+s.name+' collected '+s.lastReviews+' new reviews with zero cancellations this week \u2014 flawless execution.' };
+      }
+      if (!w && s.streak >= 3) {
+        w = { ar: '\uD83C\uDFC6 '+s.name+' \u2014 '+s.streak+' \u0623\u0633\u0627\u0628\u064A\u0639 \u0645\u062A\u062A\u0627\u0644\u064A\u0629 \u0628\u062F\u0648\u0646 \u0623\u064A \u0645\u0634\u0643\u0644\u0629 \uD83C\uDFC6',
+              en: '\uD83C\uDFC6 '+s.name+' is on a '+s.streak+'-week clean streak \u2014 consistent excellence.' };
+      }
+      if (!w && s.lastPatients > 0 && s.lastCancel < 0.05) {
+        var _sp = Math.round((1-s.lastCancel)*100);
+        w = { ar: '\uD83D\uDCAA '+s.name+' \u2014 '+s.lastPatients+' \u0645\u0631\u064A\u0636 \u0648\u0646\u0633\u0628\u0629 \u062D\u0636\u0648\u0631 '+_sp+'% \u2014 \u0647\u0630\u0627 \u0628\u064A\u0642\u0648\u0644 \u0643\u0644 \u0634\u064A \u0639\u0646 \u0645\u0633\u062A\u0648\u0649 \u0639\u064A\u0627\u062F\u062A\u0643 \u2764\uFE0F',
+              en: '\uD83D\uDCAA '+s.name+' \u2014 '+s.lastPatients+' patients, '+_sp+'% showed up. Commitment is the brand.' };
+      }
+      if (w) _mwWins.push(w);
+    });
+    _mwWins = _mwWins.slice(0, 5);
+    var _mwBody;
+    if (_mwWins.length === 0) {
+      _mwBody = '<div style="color:var(--muted);font-size:14px">Keep building \u2014 wins are coming! \uD83D\uDCAA</div>';
+    } else {
+      _mwBody = '<div style="display:flex;flex-direction:column;gap:12px">'+_mwWins.map(function(w){
+        var full = w.ar + '\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n' + w.en;
+        return '<div style="background:#1a1a2e;border-radius:10px;padding:14px">'+
+          '<div class="ammo-textbox" style="margin-bottom:8px" dir="auto">'+w.ar+'</div>'+
+          '<div class="ammo-textbox" style="margin-bottom:8px">'+w.en+'</div>'+
+          mwCopy(full)+'</div>';
+      }).join('')+'</div>';
+    }
+    var _block0 =
+      '<div class="ammo-section">'+
+        '<div class="ammo-header" onclick="(function(){var b=document.getElementById(\'ammo-body-0\');var c=document.getElementById(\'ammo-chev-0\');b.classList.toggle(\'open\');c.classList.toggle(\'open\');})()">' +
+          '<div class="ammo-header-left">'+
+            '<span class="ammo-tag">\uD83E\uDD16 AI-Generated</span>'+
+            '<span class="ammo-title">\uD83D\uDD0D This Week\'s Hidden Wins \u2014 Auto-detected</span>'+
+          '</div>'+
+          '<span class="ammo-chevron open" id="ammo-chev-0">\u25BC</span>'+
+        '</div>'+
+        '<div class="ammo-body open" id="ammo-body-0">'+_mwBody+'</div>'+
+      '</div>';
+
     window._ammoHtml =
       '<div class="insights-section" style="margin-bottom:40px">' +
         '<div class="insights-section-title" style="margin-bottom:4px">&#128241; Content Team Ammunition</div>' +
         '<div class="insights-section-sub" style="margin-bottom:16px">Ready-to-post content based on this week\'s real data</div>' +
+        _block0 +
         ammoBlock(1, '&#128247; Post', 'The Big Number Post',      block1Body) +
         ammoBlock(2, '&#128247; Post', 'The Social Proof Post',    block2Body) +
         ammoBlock(3, '&#127916; Reel', 'Reel Hook Ideas',          block3Body) +
@@ -1960,7 +2032,7 @@ async function loadInsights() {
         if(d>0.50)  anoms.push({msg:'🚀 '+s.name+' — patients spiked +'+( d*100).toFixed(0)+'% this week ('+s.prevPatients+' → '+s.lastPatients+')!',bg:'#f0fdf4',bd:'#22c55e'});
       }
       if(s.triggers>=15&&s.lastReviews===0) anoms.push({msg:'⚠️ '+s.name+' — '+s.triggers+' trigger links but 0 new reviews. Check if the review flow is working.',bg:'#fffbeb',bd:'#f59e0b'});
-      if(s.lastPatients>=15&&s.lastCancel>0.30) anoms.push({msg:'⚠️ '+s.name+' — '+s.lastPatients+' bookings but '+(s.lastCancel*100).toFixed(0)+'% cancellation rate. Patient quality issue?',bg:'#fef2f2',bd:'#f59e0b'});
+      if(s.lastPatients>=15&&s.lastCancel>0.30){var _cmt=100-Math.round(s.lastCancel*100);var _cmtMsg=_cmt<75?'\u26A0\uFE0F Schedule Optimization Opportunity \u2014 '+_cmt+'% commitment rate':'Patient Commitment Rate: '+_cmt+'% \u2705';anoms.push({msg:s.name+' \u2014 '+_cmtMsg+' ('+s.lastPatients+' bookings this week)',bg:'#fef2f2',bd:'#f59e0b'});}
     });
     var anomContent=anoms.length===0
       ? '<div style="color:#22c55e;font-weight:600">✅ No anomalies detected this week — all metrics within normal range.</div>'
@@ -2023,17 +2095,63 @@ async function loadInsights() {
     // Donut
     var DR=52,DCx=75,DCy=75,DS=20,DC=2*Math.PI*DR,cDash=(cleanPctE/100*DC).toFixed(1);
     var donutSVG='<svg width="150" height="150" style="display:block;margin:0 auto"><circle cx="'+DCx+'" cy="'+DCy+'" r="'+DR+'" fill="none" stroke="#f3f3f3" stroke-width="'+DS+'"/><circle cx="'+DCx+'" cy="'+DCy+'" r="'+DR+'" fill="none" stroke="#22c55e" stroke-width="'+DS+'" stroke-dasharray="'+cDash+' '+(DC-parseFloat(cDash)).toFixed(1)+'" transform="rotate(-90 '+DCx+' '+DCy+')"/><text x="'+DCx+'" y="'+(DCy-5)+'" text-anchor="middle" fill="#22c55e" font-size="18" font-weight="800">'+cleanPctE+'%</text><text x="'+DCx+'" y="'+(DCy+11)+'" text-anchor="middle" fill="#888" font-size="9">flag-free</text></svg>';
+    // Portfolio velocity
+    var _velData=active.filter(function(r){return r.rows.length>=2;}).map(function(r){
+      var fr=_n(r.rows[0][30]),lr=_n(r.rows[r.rows.length-1][30]),wks=r.rows.length,rt=wks>1?(lr-fr)/(wks-1):0;
+      return {name:r.client.name,rate:rt};
+    }).sort(function(a,b){return b.rate-a.rate;});
+    var _v25=Math.ceil(_velData.length*0.25)||1;
+    var _v75=Math.floor(_velData.length*0.75)||_velData.length;
+    var _topRate=_velData.length?_velData.slice(0,_v25).reduce(function(a,d){return a+d.rate;},0)/_v25:0;
+    var _velList='<div style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto">'+_velData.map(function(d,i){var lbl,col;if(i<_v25){lbl='Portfolio Leader';col='#22c55e';}else if(i<_v75){lbl='On Track';col='#A899DB';}else{lbl='Growth Opportunity';col='#f59e0b';}return '<div style="display:flex;align-items:center;gap:6px;font-size:11px"><div style="width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escA(d.name)+'</div><span style="color:'+col+';font-weight:600;min-width:110px">'+lbl+'</span><span style="color:var(--muted)">'+d.rate.toFixed(1)+' rev/wk</span></div>';}).join('')+'</div>'+(_velData.length?'<div style="font-size:11px;color:var(--muted);margin-top:8px">Portfolio leaders collecting <b>'+_topRate.toFixed(1)+'</b> reviews/wk \u2014 <b>'+Math.round(_topRate*52)+'</b> projected/year.</div>':'');
     var benchContent='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px">'+
       '<div><div style="font-size:12px;font-weight:600;color:#A899DB;margin-bottom:8px">New Patients / Week</div>'+pBar(p25p,p50p,p75p,pmx,'Distribution across all clinics')+'<div style="font-size:11px;color:var(--muted)">Portfolio average: <b>'+avgPatsB+'</b> pts/wk<br>Top 25% book <b>'+p75p+'+</b> pts/wk</div></div>'+
       '<div><div style="font-size:12px;font-weight:600;color:#A899DB;margin-bottom:8px">Total Google Reviews</div>'+pBar(p25r,p50r,p75r,rmx,'Cumulative reviews per clinic (col AE)')+'<div style="font-size:11px;color:var(--muted)">Median clinic has <b>'+p50r+'</b> total reviews<br>Top 25% have <b>'+p75r+'+</b> reviews</div></div>'+
       '<div style="text-align:center"><div style="font-size:12px;font-weight:600;color:#A899DB;margin-bottom:8px">Clean Week Rate</div>'+donutSVG+'<div style="font-size:11px;color:var(--muted);margin-top:6px">'+cleanWk+' of '+totWk+' weekly reports were flag-free</div></div>'+
-    '</div>';
+    '</div>'+
+    '<div style="margin-top:18px;border-top:1px solid rgba(168,153,219,.15);padding-top:16px"><div style="font-size:12px;font-weight:600;color:#A899DB;margin-bottom:8px">Portfolio Velocity \u2014 Review Collection Speed</div>'+_velList+'</div>';
     var sG = collSec('🏆 How Do Our Clinics Compare?','Anonymized benchmarks across our portfolio',benchContent,false);
+
+    // ── LTV: Revenue Pipeline ─────────────────────────────────────────────
+    var _ltvNewPats = summaries.reduce(function(s,r){return s+r.lastPatients;},0);
+    var _ltvNewRevs = summaries.reduce(function(s,r){return s+r.lastReviews;},0);
+    var _pipeVal    = _ltvNewPats * 1000;
+    var _firstVisit = _ltvNewPats * 80;
+    var _trustEq    = _ltvNewRevs * 150;
+    function _ltvCard(bigNum,lbl,sub,note,grad){return '<div style="background:'+grad+';color:#fff;border-radius:16px;padding:24px 18px;text-align:center"><div style="font-size:36px;font-weight:900;line-height:1;margin-bottom:8px">'+bigNum+'</div><div style="font-size:15px;font-weight:700;margin-bottom:5px">'+lbl+'</div><div style="font-size:12px;opacity:.8;margin-bottom:3px">'+sub+'</div><div style="font-size:10px;opacity:.55">'+note+'</div></div>';}
+    var _ltvCards = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">'+
+      _ltvCard(_pipeVal.toLocaleString()+' JOD','Future Revenue Pipeline This Week',_ltvNewPats+' new patients \u00d7 1,000 JOD LTV','Conservative estimate based on dental industry averages','linear-gradient(135deg,#064e3b,#065f46)')+
+      _ltvCard(_firstVisit.toLocaleString()+' JOD','Immediate Revenue Generated','First visits across all partner clinics this week','','linear-gradient(135deg,#2d2a5e,#4c1d95)')+
+      _ltvCard(_trustEq.toLocaleString()+' JOD','Trust Equity Added',_ltvNewRevs+' new reviews \u00d7 150 JOD projected value','','linear-gradient(135deg,#1e3a5f,#1e40af)')+
+    '</div>';
+    var _lostRev = summaries.filter(function(s){return s.hookFlag||s.offerFlag;}).map(function(s){
+      var missed=Math.round(s.triggers*0.4),gap=Math.max(0,missed-s.lastPatients),hp=s.triggers>0?Math.round(s.lastPatients/s.triggers*100):0;
+      return {name:s.name,gap:gap,hp:hp};
+    }).filter(function(a){return a.gap>2;}).sort(function(a,b){return b.gap-a.gap;}).slice(0,5);
+    var _lostHtml = _lostRev.length?'<div style="margin-top:16px"><div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text)">\uD83D\uDCB8 Lost Revenue Recovery</div>'+_lostRev.map(function(a){return '<div style="background:#fffbeb;border-left:4px solid #f59e0b;border-radius:10px;padding:12px 15px;margin-bottom:8px;font-size:13px;line-height:1.5">\uD83D\uDCB8 '+escA(a.name)+' \u2014 Capturing '+a.gap+' more patients would add '+(a.gap*1000).toLocaleString()+' JOD to your pipeline this month. Current hook rate: '+a.hp+'% \u2192 Target: 60%+</div>';}).join('')+'</div>':'';
+    var sLTV = collSec('\uD83D\uDCB0 Revenue Pipeline \u2014 What This Week Is Really Worth','Raw patient numbers converted to real business value',_ltvCards+_lostHtml,false);
+
+    // ── Tipping Points ─────────────────────────────────────────────────────
+    var _msArr=[50,100,150,200,250,300,400,500,750,1000];
+    var _tps=[];
+    var _tpCtr=0;
+    function _tpCopy(text){_tpCtr++;var bid='tp-btn-'+_tpCtr,tid='tp-txt-'+_tpCtr;return '<div style="display:none" id="'+tid+'">'+escA(text)+'</div><button class="ammo-copy-btn" id="'+bid+'" onclick="(function(){var t=document.getElementById(\''+tid+'\');navigator.clipboard.writeText(t.textContent).then(function(){var b=document.getElementById(\''+bid+'\');b.textContent=\'\u2705 Copied!\';setTimeout(function(){b.textContent=\'\uD83D\uDCCB Copy\';},2000);});})();">\uD83D\uDCCB Copy</button>';}
+    summaries.forEach(function(s){
+      var nxt=_msArr.find(function(m){return m>s.totalReviews&&m-s.totalReviews<=15;});
+      if(nxt){var g=nxt-s.totalReviews,cap=nxt+' \u062A\u0642\u064A\u064A\u0645 \u0639\u0644\u0649 \u062C\u0648\u062C\u0644 \uD83C\uDF89 \u0634\u0643\u0631\u0627\u064B \u0644\u0643\u0644 \u0645\u0631\u064A\u0636 \u0648\u062B\u0642 \u0628\u0646\u0627 \u2014 \u0647\u0630\u0627 \u0625\u0646\u062C\u0627\u0632\u0643\u0645 \u0623\u0646\u062A\u0645';_tps.push({grad:'linear-gradient(135deg,#4c1d95,#7c3aed)',body:'<div style="font-weight:700;font-size:14px;margin-bottom:6px">\u2B50 '+escA(s.name)+' is '+g+' reviews away from '+nxt+'!</div><div style="font-size:12px;opacity:.85;margin-bottom:8px">Prepare a celebration post now.</div><div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;font-size:13px;margin-bottom:8px">'+escA(cap)+'</div>'+_tpCopy(cap)});}
+      if(s.streak===2){var c2='3 \u0623\u0633\u0627\u0628\u064A\u0639 \u0645\u062A\u062A\u0627\u0644\u064A\u0629 \u0628\u062F\u0648\u0646 \u0623\u064A \u0645\u0634\u0627\u0643\u0644 \u0641\u064A \u0627\u0644\u062D\u062C\u0648\u0632\u0627\u062A \u0645\u0627\u0630\u0627 \u064A\u0639\u0646\u064A \u0647\u0630\u0627\u061F \u064A\u0639\u0646\u064A \u0646\u0638\u0627\u0645 \u064A\u0634\u062A\u063A\u0644 \u062D\u062A\u0649 \u0644\u0648 \u0646\u0645\u062A \uD83D\uDE34';_tps.push({grad:'linear-gradient(135deg,#064e3b,#15803d)',body:'<div style="font-weight:700;font-size:14px;margin-bottom:6px">\uD83D\uDD25 '+escA(s.name)+' \u2014 2 clean weeks straight!</div><div style="font-size:12px;opacity:.85;margin-bottom:8px">If next week is clean too, that\'s a 3-week streak. Prepare now:</div><div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;font-size:13px;margin-bottom:8px">'+escA(c2)+'</div>'+_tpCopy(c2)});}
+      if(s.streak===4){var c4='5 \u0623\u0633\u0627\u0628\u064A\u0639 \u0645\u062A\u062A\u0627\u0644\u064A\u0629 \u0628\u062F\u0648\u0646 \u0623\u064A \u0645\u0634\u0643\u0644\u0629 \u2014 \u0647\u0630\u0627 \u0644\u064A\u0633 \u062D\u0638\u061F\u061F \u0647\u0630\u0627 \u0646\u0638\u0627\u0645';_tps.push({grad:'linear-gradient(135deg,#064e3b,#15803d)',body:'<div style="font-weight:700;font-size:14px;margin-bottom:6px">\uD83D\uDD25 '+escA(s.name)+' \u2014 4 clean weeks straight!</div><div style="font-size:12px;opacity:.85;margin-bottom:8px">Next week = 5-week streak! Prepare now:</div><div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;font-size:13px;margin-bottom:8px">'+escA(c4)+'</div>'+_tpCopy(c4)});}
+      if(s.rows.length>=3){var rw=s.rows,w1p=_n(rw[rw.length-3][3]),w2p=_n(rw[rw.length-2][3]),w3p=_n(rw[rw.length-1][3]),g1=w1p>0?(w2p-w1p)/w1p:0,g2=w2p>0?(w3p-w2p)/w2p:0;if(g1>0.5&&g2>0.5)_tps.push({grad:'linear-gradient(135deg,#1e3a5f,#1e40af)',body:'<div style="font-weight:700;font-size:14px;margin-bottom:6px">\uD83D\uDCC8 '+escA(s.name)+' \u2014 back-to-back growth weeks!</div><div style="font-size:12px;opacity:.85">Suggest client testimonial content now while momentum is high.</div>'});}
+    });
+    var _tpContent=_tps.length===0
+      ?'<div style="color:var(--muted);font-size:14px">No tipping points this week \u2014 keep building the streak! \uD83D\uDCAA</div>'
+      :'<div style="display:flex;flex-direction:column;gap:10px">'+_tps.map(function(tp){return '<div style="background:'+tp.grad+';color:#fff;border-radius:14px;padding:18px 20px">'+tp.body+'</div>';}).join('')+'</div>';
+    var sTipping = collSec('\uD83C\uDFAF Tipping Points \u2014 Prepare Your Campaigns','Clinics approaching major milestones \u2014 act now',_tpContent,false);
 
     return '<div class="insights-section" style="margin-bottom:40px">'+
       '<div class="insights-section-title" style="margin-bottom:4px">📊 Internal Analytics</div>'+
       '<div class="insights-section-sub" style="margin-bottom:14px">Deep-dive analysis for strategy and decisions</div>'+
-      sA + sB + sC + sD +
+      sA + sB + sC + sD + sLTV + sTipping +
       '<div class="insights-section-title" style="margin-bottom:4px;margin-top:30px">🎯 External Marketing</div>'+
       '<div class="insights-section-sub" style="margin-bottom:14px">Visuals and tools for prospects and social proof</div>'+
       sE + sF + sG +
@@ -2081,8 +2199,8 @@ async function loadInsights() {
   // ── Section 3: Trend Analysis ─────────────────────────────────────────────
   const withHistory = summaries.filter(function(s) { return s.prevRow !== null; });
   const sorted3 = withHistory.slice().sort(function(a,b) {
-    const order = { improving: 0, stable: 1, declining: 2 };
-    return (order[a.trendStatus] || 1) - (order[b.trendStatus] || 1);
+    const order = { accelerating: 0, growth_phase: 1, brand_deepening: 2, consolidating: 3, coiled_spring: 4, optimization_window: 5 };
+    return (order[a.trendStatus] !== undefined ? order[a.trendStatus] : 3) - (order[b.trendStatus] !== undefined ? order[b.trendStatus] : 3);
   });
 
   let trendHtml =
@@ -2094,11 +2212,17 @@ async function loadInsights() {
     trendHtml += '<div style="color:var(--muted);grid-column:1/-1">Need at least 2 weeks of data to show trends.</div>';
   } else {
     sorted3.forEach(function(s) {
-      const badge = s.trendStatus === 'improving'
-        ? '<span style="color:#22c55e;font-weight:700">&#128994; Improving</span>'
-        : s.trendStatus === 'declining'
-        ? '<span style="color:#ef4444;font-weight:700">&#128308; Declining</span>'
-        : '<span style="color:var(--muted);font-weight:700">&#9898; Stable</span>';
+      const _phases = {
+        accelerating:        { badge: '\uD83D\uDE80 Accelerating',          color: '#22c55e', sub: '' },
+        growth_phase:        { badge: '\uD83D\uDCC8 Growth Phase',          color: '#3b82f6', sub: '' },
+        brand_deepening:     { badge: '\uD83D\uDC8E Brand Deepening Phase', color: '#A899DB', sub: 'Building trust equity \u2014 quality over quantity' },
+        coiled_spring:       { badge: '\uD83C\uDF00 Coiled Spring',         color: '#f59e0b', sub: 'Primed for rebound \u2014 one trigger away' },
+        optimization_window: { badge: '\uD83D\uDD27 Optimization Window',   color: '#f97316', sub: 'Clear action items identified' },
+        consolidating:       { badge: '\u2696\uFE0F Consolidating',         color: '#888',    sub: '' }
+      };
+      const _ph = _phases[s.trendStatus] || _phases.consolidating;
+      const badge = '<span style="color:' + _ph.color + ';font-weight:700">' + _ph.badge + '</span>' +
+        (_ph.sub ? '<div style="font-size:10px;color:var(--muted);margin-top:3px">' + _ph.sub + '</div>' : '');
       const patArrow  = trendArrow(s.patientDelta);
       const patCls    = trendCls(s.patientDelta);
       const revArrow  = s.lastReviews >= s.prevReviews ? '\u2191' : '\u2193';
@@ -2159,9 +2283,8 @@ async function loadInsights() {
         detail = esc(s.name.split(' ')[0]) + ' has a hook rate of ' +
           pct(hookRatio) + '. Fixing this could unlock up to ' + potLift + '% more bookings based on their trigger link volume.';
       } else if (s.offerFlag) {
-        const extraRevs = Math.max(0, Math.round(s.triggers * 0.7 - s.lastReviews));
-        detail = 'Only ' + pct(s.triggers > 0 ? s.lastReviews / s.triggers : 0) + ' of patients are leaving reviews. ' +
-          'With ' + s.triggers + ' trigger links, there\u2019s room for ' + extraRevs + ' more reviews this week.';
+        const silentPromoters = Math.min(s.triggers, Math.max(1, Math.round(s.triggers * 0.7 - s.lastReviews)));
+        detail = '\uD83C\uDFC6 Untapped Trust Equity: ~' + silentPromoters + ' silent promoters waiting to be activated this week.';
       } else {
         detail = 'Cancellation rate is at ' + pct(s.lastCancel) + ' — above the 25% threshold. ' +
           'Reducing cancellations is the fastest path to higher weekly patient counts.';
