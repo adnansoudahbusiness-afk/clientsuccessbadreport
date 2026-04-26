@@ -1687,7 +1687,7 @@ function renderStatusTable() {
 
   var thead = '<tr><th style="min-width:160px">Client</th><th>Strike</th><th>Trend</th>';
   showWeeks.forEach(function(wl) {
-    var short = wl.replace(/^Sat\s+/i,'').split('\u2013')[0].trim();
+    var short = wl.replace(/^Sat\s+/i,'');
     thead += '<th colspan="3" style="text-align:center;border-left:1px solid var(--border)">' + escHtml(short) + '</th>';
   });
   thead += '</tr><tr><th></th><th></th><th></th>';
