@@ -884,11 +884,18 @@
   <!-- TAB 3: Client Status -->
   <div id="tab-status" class="tab-content">
     <h2>Client Status</h2>
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
       <button class="btn btn-blue" onclick="loadClientStatus()">&#8635; Refresh</button>
+      <select id="status-week-filter" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px" onchange="filterStatusTable()">
+        <option value="all">All Weeks</option>
+      </select>
+      <button class="btn" style="background:var(--surface2)" onclick="exportStatusCSV()">&#8659; Export CSV</button>
       <span class="summary-msg" id="status-summary"></span>
     </div>
-    <div class="status-grid" id="status-grid"></div>
+    <div id="status-summary-bar" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px"></div>
+    <div class="table-wrap" id="status-table-wrap">
+      <div style="color:var(--muted);padding:40px;text-align:center">Click <b>Refresh</b> to load client status</div>
+    </div>
   </div>
 
   <!-- TAB 4: Insights -->
@@ -917,6 +924,7 @@
            onerror="this.style.display='none'" />ThreeUp Solutions
     </div>
     <div class="client-nav-right">
+      <button id="cp-lang-btn" onclick="toggleCpLang()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px">&#127760; AR</button>
       <span class="nav-user-badge" id="client-user-badge"></span>
       <button class="btn-logout" onclick="doLogout()">Logout</button>
     </div>
@@ -924,7 +932,7 @@
   <div class="client-content">
     <div class="client-welcome">
       <h1 id="client-welcome-heading">Welcome &#128075;</h1>
-      <p>Your weekly performance report &mdash; updated automatically each week by ThreeUp Solutions.</p>
+      <p id="cp-welcome-sub">Your weekly performance report &mdash; updated automatically each week by ThreeUp Solutions.</p>
       <div class="client-status-banner" id="client-status-banner">
         <span class="client-status-emoji">&#8987;</span>
         <div>
@@ -933,27 +941,35 @@
         </div>
       </div>
     </div>
+    <div id="cp-week-selector-wrap" style="margin-bottom:8px"></div>
     <div class="client-summary-cards" id="client-summary-cards"></div>
-    <div class="section-title">Weekly Performance Breakdown</div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Week</th>
-            <th>New Reviews</th>
-            <th>Total Reviews</th>
-            <th>Website Patients</th>
-            <th>Hook</th>
-            <th>Offer</th>
-            <th>Cancel Rate</th>
-            <th>Week Status</th>
-          </tr>
-        </thead>
-        <tbody id="client-report-tbody">
-          <tr><td colspan="8" class="loading-row"><span class="spinner"></span> Loading your report&hellip;</td></tr>
-        </tbody>
-      </table>
+    <div id="cp-comparison-wrap"></div>
+    <div id="cp-nextsteps-wrap"></div>
+    <div id="cp-table-section">
+      <div class="section-title" id="cp-table-title">Weekly Performance Breakdown</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Week</th>
+              <th>New Reviews</th>
+              <th>Total Reviews</th>
+              <th>Website Patients</th>
+              <th>Hook</th>
+              <th>Offer</th>
+              <th>Cancel Rate</th>
+              <th>Week Status</th>
+            </tr>
+          </thead>
+          <tbody id="client-report-tbody">
+            <tr><td colspan="8" class="loading-row"><span class="spinner"></span> Loading your report&hellip;</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+    <div id="cp-milestone-wrap"></div>
+    <div id="cp-history-wrap"></div>
+    <div id="cp-whatsapp-wrap"></div>
   </div>
 </div>
 
@@ -1106,14 +1122,73 @@ function showAdminDashboard(username) {
   }
 }
 
+// ─── CLIENT PORTAL GLOBALS ───────────────────
+var _cpClientIdx = null;
+var _cpAllRows   = [];
+var _cpLang      = 'en';
+
+function _t(en, ar) { return _cpLang === 'ar' ? ar : en; }
+
+function toggleCpLang() {
+  _cpLang = _cpLang === 'en' ? 'ar' : 'en';
+  const btn = document.getElementById('cp-lang-btn');
+  if (btn) btn.textContent = _cpLang === 'ar' ? '\uD83C\uDF10 EN' : '\uD83C\uDF10 AR';
+  const cd = document.getElementById('client-dashboard');
+  if (cd) {
+    cd.style.direction  = _cpLang === 'ar' ? 'rtl' : 'ltr';
+    cd.style.fontFamily = _cpLang === 'ar' ? 'Tahoma, Arial, sans-serif' : '';
+  }
+  const sub = document.getElementById('cp-welcome-sub');
+  if (sub) sub.textContent = _t(
+    'Your weekly performance report \u2014 updated automatically each week by ThreeUp Solutions.',
+    '\u062A\u0642\u0631\u064A\u0631 \u0627\u0644\u0623\u062F\u0627\u0621 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064A \u2014 \u064A\u062A\u0645 \u062A\u062D\u062F\u064A\u062B\u0647 \u062A\u0644\u0642\u0627\u0626\u064A\u0627\u064B.'
+  );
+  const tbl = document.getElementById('cp-table-title');
+  if (tbl) tbl.textContent = _t('Weekly Performance Breakdown', '\u062A\u0641\u0635\u064A\u0644 \u0627\u0644\u0623\u062F\u0627\u0621 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064A');
+  if (_cpClientIdx !== null && _cpAllRows.length > 0) {
+    const sel = document.getElementById('cp-week-sel');
+    const wkIdx = sel ? parseInt(sel.value) : (_cpAllRows.length - 1);
+    _renderCpAll(wkIdx);
+  }
+}
+
+function _cpShareWA() {
+  if (_cpClientIdx === null) return;
+  const client = CONFIG.CLIENTS[_cpClientIdx];
+  const sel    = document.getElementById('cp-week-sel');
+  const wkIdx  = sel ? parseInt(sel.value) : (_cpAllRows.length - 1);
+  const row    = _cpAllRows[wkIdx];
+  if (!row) return;
+  const weekLabel = String(row[0] || '').trim();
+  const reviews   = row[1] || '0';
+  const total     = row[30] || '\u2014';
+  const hook      = String(row[10] || '').trim().toUpperCase() === 'TRUE' ? '\u274C Flagged' : '\u2705 Good';
+  const offer     = String(row[11] || '').trim().toUpperCase() === 'TRUE' ? '\u274C Flagged' : '\u2705 Good';
+  const msg = encodeURIComponent(
+    '\uD83D\uDCC8 ThreeUp Weekly Report \u2014 ' + client.name + '\n' +
+    'Week: ' + weekLabel + '\n' +
+    'New Reviews: ' + reviews + ' | Total: ' + total + '\n' +
+    'Hook: ' + hook + ' | Offer: ' + offer + '\n' +
+    'Generated by ThreeUp Solutions \uD83D\uDE80'
+  );
+  window.open('https://wa.me/?text=' + msg, '_blank');
+}
+
 function showClientDashboard(clientIndex) {
+  _cpClientIdx = clientIndex;
+  _cpAllRows   = [];
+  _cpLang      = 'en';
   document.getElementById('login-screen').style.display = 'none';
   const dash = document.getElementById('client-dashboard');
-  dash.style.display = 'flex';
+  dash.style.display    = 'flex';
   dash.style.flexDirection = 'column';
+  dash.style.direction  = 'ltr';
+  dash.style.fontFamily = '';
   const client = CONFIG.CLIENTS[clientIndex];
   document.getElementById('client-welcome-heading').textContent = 'Welcome, ' + client.name + ' \uD83D\uDC4B';
   document.getElementById('client-user-badge').textContent = client.name;
+  const btn = document.getElementById('cp-lang-btn');
+  if (btn) btn.textContent = '\uD83C\uDF10 AR';
   loadClientReport(client);
 }
 
@@ -1468,69 +1543,225 @@ function toggleNote(i) {
 // ═══════════════════════════════════════════
 // TAB 3 \u2014 Client Status
 // ═══════════════════════════════════════════
+var _statusData = [];
+
+function _csIsClean(row) {
+  var hook   = String(row[10] !== undefined ? row[10] : '').trim().toUpperCase();
+  var offer  = String(row[11] !== undefined ? row[11] : '').trim().toUpperCase();
+  var cancel = String(row[16] !== undefined ? row[16] : '').trim().toUpperCase();
+  return hook !== 'TRUE' && offer !== 'TRUE' && cancel !== 'TRUE';
+}
+
+function _csFlagCell(row, colIdx) {
+  var v = String(row[colIdx] !== undefined ? row[colIdx] : '').trim().toUpperCase();
+  if (v === 'TRUE')  return '<span class="pill pill-red"   style="font-size:11px">\u274C</span>';
+  if (v === 'FALSE') return '<span class="pill pill-green" style="font-size:11px">\u2705</span>';
+  return '<span style="color:var(--muted)">\u2014</span>';
+}
+
 function initTab3() {
-  const grid = document.getElementById('status-grid');
-  grid.innerHTML = '';
-  CONFIG.CLIENTS.forEach(function(client) {
-    const card = document.createElement('div');
-    card.className = 'client-card';
-    card.id = 'card-' + client.contact_id;
-    card.innerHTML =
-      '<div class="card-name">' + escHtml(client.name) + '</div>' +
-      '<div class="card-loading">Click Refresh to load</div>';
-    grid.appendChild(card);
-  });
+  // Table is pre-populated with placeholder text; nothing to init
 }
 
 async function loadClientStatus() {
-  const summary = document.getElementById('status-summary');
-  summary.textContent = 'Loading\u2026';
-  const headers = {
+  var summary    = document.getElementById('status-summary');
+  var tableWrap  = document.getElementById('status-table-wrap');
+  var summaryBar = document.getElementById('status-summary-bar');
+  var wkFilter   = document.getElementById('status-week-filter');
+
+  summary.textContent  = 'Loading\u2026';
+  tableWrap.innerHTML  = '<div style="padding:40px;text-align:center"><span class="spinner"></span> Fetching data\u2026</div>';
+  summaryBar.innerHTML = '';
+
+  var ghlHeaders = {
     'Authorization': 'Bearer ' + CONFIG.THREEUP_API_KEY,
     'Version': '2021-07-28'
   };
-  let loaded = 0;
-  await Promise.all(CONFIG.CLIENTS.map(async function(client) {
-    const card = document.getElementById('card-' + client.contact_id);
-    card.innerHTML =
-      '<div class="card-name">' + escHtml(client.name) + '</div>' +
-      '<div class="card-loading"><span class="spinner"></span></div>';
+
+  var results = await Promise.all(CONFIG.CLIENTS.map(async function(client) {
     try {
-      const [contactResp, notesResp] = await Promise.all([
-        fetch(GHL_BASE + '/contacts/' + client.contact_id, { headers: headers }),
-        fetch(GHL_BASE + '/contacts/' + client.contact_id + '/notes?limit=1', { headers: headers })
+      var sheetUrl = CONFIG.APPS_SCRIPT_URL + '?sheet_id=' + encodeURIComponent(client.sheet_id);
+      var ghlUrl   = GHL_BASE + '/contacts/' + client.contact_id;
+      var responses = await Promise.all([
+        fetch(sheetUrl),
+        fetch(ghlUrl, { headers: ghlHeaders })
       ]);
-      let counterVal = 0;
-      if (contactResp.ok) {
-        const data = await contactResp.json();
-        const fields = (data.contact && data.contact.customFields) ? data.contact.customFields : [];
-        const field = fields.find(function(f) { return f.id === CONFIG.COUNTER_FIELD_ID; });
-        counterVal = field ? (parseInt(field.value, 10) || 0) : 0;
-      }
-      let lastNoteDate = null;
-      if (notesResp.ok) {
-        const ndata = await notesResp.json();
-        const notes = ndata.notes || [];
-        if (notes.length > 0) {
-          const sorted = notes.sort(function(a, b) { return new Date(b.dateAdded) - new Date(a.dateAdded); });
-          lastNoteDate = sorted[0].dateAdded;
+      var sheetResp = responses[0], ghlResp = responses[1];
+
+      var rows = [];
+      if (sheetResp.ok) {
+        var sd = await sheetResp.json();
+        if (!sd.error && Array.isArray(sd.rows)) {
+          rows = sd.rows.filter(function(r) { return r[0] && String(r[0]).trim() !== ''; });
         }
       }
-      const emoji = counterVal === 0 ? '\uD83D\uDFE2' : counterVal === 1 ? '\uD83D\uDFE1' : counterVal === 2 ? '\uD83D\uDFE0' : '\uD83D\uDD34';
-      const color = counterVal === 0 ? 'var(--green)' : counterVal === 1 ? 'var(--yellow)' : counterVal === 2 ? 'var(--orange)' : 'var(--red)';
-      card.innerHTML =
-        '<div class="card-name">' + escHtml(client.name) + '</div>' +
-        '<div class="card-counter-label">Bad Report Counter</div>' +
-        '<div class="card-counter" style="color:' + color + '">' + emoji + ' <span>' + counterVal + '</span></div>' +
-        '<div class="card-last-note">' + (lastNoteDate ? 'Last note: ' + fmtDateTime(lastNoteDate) : 'No notes found') + '</div>';
-      loaded++;
-    } catch (e) {
-      card.innerHTML =
-        '<div class="card-name">' + escHtml(client.name) + '</div>' +
-        '<div style="color:var(--red);font-size:13px">Failed to load</div>';
+
+      var counterVal = 0;
+      if (ghlResp.ok) {
+        var gd = await ghlResp.json();
+        var fields = (gd.contact && gd.contact.customFields) ? gd.contact.customFields : [];
+        var f = fields.find(function(x) { return x.id === CONFIG.COUNTER_FIELD_ID; });
+        counterVal = f ? (parseInt(f.value, 10) || 0) : 0;
+      }
+
+      var strikeCount = 0;
+      for (var i = rows.length - 1; i >= 0; i--) {
+        if (!_csIsClean(rows[i])) strikeCount++;
+        else break;
+      }
+
+      var lastRevs = rows.length >= 2 ? ((parseFloat(rows[rows.length-1][1])||0) - (parseFloat(rows[rows.length-2][1])||0)) : null;
+      return { name: client.name, rows: rows, counter: counterVal, strike: strikeCount, trend: lastRevs, ok: true };
+    } catch(e) {
+      return { name: client.name, rows: [], counter: 0, strike: 0, trend: null, ok: false };
     }
   }));
+
+  _statusData = results;
+
+  // Collect all week labels (sorted by first appearance)
+  var allWeeks = [];
+  results.forEach(function(r) {
+    r.rows.forEach(function(row) {
+      var wl = String(row[0] || '').trim();
+      if (wl && allWeeks.indexOf(wl) === -1) allWeeks.push(wl);
+    });
+  });
+
+  // Rebuild week filter
+  var prevFilter = wkFilter.value;
+  wkFilter.innerHTML = '<option value="all">All Weeks</option>';
+  allWeeks.slice(-8).forEach(function(wl) {
+    var opt = document.createElement('option');
+    opt.value = wl; opt.textContent = wl;
+    wkFilter.appendChild(opt);
+  });
+  if (prevFilter && prevFilter !== 'all') {
+    wkFilter.value = prevFilter;
+    if (wkFilter.value !== prevFilter) wkFilter.value = 'all';
+  }
+
+  var loaded  = results.filter(function(r) { return r.ok; }).length;
   summary.textContent = loaded + '/' + CONFIG.CLIENTS.length + ' clients loaded';
+
+  // Summary bar
+  var greenC  = results.filter(function(r) { return r.strike === 0; }).length;
+  var yellowC = results.filter(function(r) { return r.strike === 1; }).length;
+  var orangeC = results.filter(function(r) { return r.strike === 2; }).length;
+  var redC    = results.filter(function(r) { return r.strike >= 3; }).length;
+  function _sb(emoji, label, count, color) {
+    return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:8px">' +
+      '<span style="font-size:18px">' + emoji + '</span>' +
+      '<div><div style="font-size:20px;font-weight:700;color:' + color + '">' + count + '</div>' +
+      '<div style="font-size:11px;color:var(--muted)">' + label + '</div></div></div>';
+  }
+  summaryBar.innerHTML =
+    _sb('\uD83D\uDFE2', 'Healthy',   greenC,  'var(--green)')  +
+    _sb('\uD83D\uDFE1', 'Strike 1',  yellowC, 'var(--yellow)') +
+    _sb('\uD83D\uDFE0', 'Strike 2',  orangeC, 'var(--orange)') +
+    _sb('\uD83D\uDD34', 'Strike 3+', redC,    'var(--red)');
+
+  renderStatusTable();
+}
+
+function filterStatusTable() { renderStatusTable(); }
+
+function renderStatusTable() {
+  var tableWrap = document.getElementById('status-table-wrap');
+  var wkFilter  = document.getElementById('status-week-filter');
+  var filterWk  = wkFilter ? wkFilter.value : 'all';
+
+  if (!_statusData || _statusData.length === 0) {
+    tableWrap.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center">No data loaded yet</div>';
+    return;
+  }
+
+  var allWeeks = [];
+  _statusData.forEach(function(r) {
+    r.rows.forEach(function(row) {
+      var wl = String(row[0] || '').trim();
+      if (wl && allWeeks.indexOf(wl) === -1) allWeeks.push(wl);
+    });
+  });
+  var showWeeks = (filterWk === 'all') ? allWeeks.slice(-4) : allWeeks.filter(function(w) { return w === filterWk; });
+
+  var thead = '<tr><th style="min-width:160px">Client</th><th>Strike</th><th>Trend</th>';
+  showWeeks.forEach(function(wl) {
+    var short = wl.replace(/^Sat\s+/i,'').split('\u2013')[0].trim();
+    thead += '<th colspan="3" style="text-align:center;border-left:1px solid var(--border)">' + escHtml(short) + '</th>';
+  });
+  thead += '</tr><tr><th></th><th></th><th></th>';
+  showWeeks.forEach(function() {
+    thead += '<th style="font-size:11px;border-left:1px solid var(--border)">Hook</th>' +
+             '<th style="font-size:11px">Offer</th>' +
+             '<th style="font-size:11px">Cancel</th>';
+  });
+  thead += '</tr>';
+
+  var tbody = '';
+  _statusData.forEach(function(r) {
+    var strikeBg    = r.strike === 0 ? '' : r.strike === 1 ? 'background:rgba(234,179,8,0.07)' : r.strike === 2 ? 'background:rgba(249,115,22,0.07)' : 'background:rgba(239,68,68,0.10)';
+    var strikeEmoji = r.strike === 0 ? '\uD83D\uDFE2' : r.strike === 1 ? '\uD83D\uDFE1' : r.strike === 2 ? '\uD83D\uDFE0' : '\uD83D\uDD34';
+    var strikeColor = r.strike === 0 ? 'var(--green)' : r.strike === 1 ? 'var(--yellow)' : r.strike === 2 ? 'var(--orange)' : 'var(--red)';
+    var trendCell   = r.trend === null ? '<span style="color:var(--muted)">\u2014</span>'
+                    : r.trend > 0      ? '<span style="color:var(--green)">\u2191 +' + r.trend + '</span>'
+                    : r.trend < 0      ? '<span style="color:var(--red)">\u2193 ' + r.trend + '</span>'
+                    :                    '<span style="color:var(--muted)">\u2192 0</span>';
+    tbody += '<tr style="' + strikeBg + '">';
+    tbody += '<td style="font-weight:600">' + escHtml(r.name) + '</td>';
+    tbody += '<td style="text-align:center;color:' + strikeColor + ';font-weight:700">' + strikeEmoji + ' ' + r.strike + '</td>';
+    tbody += '<td style="text-align:center">' + trendCell + '</td>';
+    showWeeks.forEach(function(wl) {
+      var row = r.rows.find(function(x) { return String(x[0]||'').trim() === wl; });
+      if (!row) {
+        tbody += '<td colspan="3" style="text-align:center;color:var(--muted);border-left:1px solid var(--border)">\u2014</td>';
+      } else {
+        tbody += '<td style="text-align:center;border-left:1px solid var(--border)">' + _csFlagCell(row, 10) + '</td>';
+        tbody += '<td style="text-align:center">' + _csFlagCell(row, 11) + '</td>';
+        tbody += '<td style="text-align:center">' + _csFlagCell(row, 16) + '</td>';
+      }
+    });
+    tbody += '</tr>';
+  });
+
+  tableWrap.innerHTML = '<table><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table>';
+}
+
+function exportStatusCSV() {
+  if (!_statusData || _statusData.length === 0) { alert('Load data first.'); return; }
+  var wkFilter  = document.getElementById('status-week-filter');
+  var filterWk  = wkFilter ? wkFilter.value : 'all';
+  var allWeeks  = [];
+  _statusData.forEach(function(r) {
+    r.rows.forEach(function(row) {
+      var wl = String(row[0]||'').trim();
+      if (wl && allWeeks.indexOf(wl) === -1) allWeeks.push(wl);
+    });
+  });
+  var showWeeks = (filterWk === 'all') ? allWeeks.slice(-4) : allWeeks.filter(function(w) { return w === filterWk; });
+  var hdrCols   = ['Client','Strike','Trend'].concat(showWeeks.flatMap(function(wl) {
+    return [wl + ' Hook', wl + ' Offer', wl + ' Cancel'];
+  }));
+  var lines = [hdrCols.join(',')];
+  _statusData.forEach(function(r) {
+    var trendStr = r.trend === null ? '' : (r.trend > 0 ? '+' + r.trend : String(r.trend));
+    var cells    = ['"' + r.name.replace(/"/g,'""') + '"', r.strike, trendStr];
+    showWeeks.forEach(function(wl) {
+      var row = r.rows.find(function(x) { return String(x[0]||'').trim() === wl; });
+      function _f(ci) {
+        if (!row) return '';
+        var v = String(row[ci]||'').trim().toUpperCase();
+        return v === 'TRUE' ? 'Flagged' : v === 'FALSE' ? 'Good' : '';
+      }
+      cells.push(_f(10), _f(11), _f(16));
+    });
+    lines.push(cells.join(','));
+  });
+  var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  var a    = document.createElement('a');
+  a.href   = URL.createObjectURL(blob);
+  a.download = 'client_status_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
 }
 
 // ═══════════════════════════════════════════
@@ -2417,180 +2648,243 @@ async function loadInsights() {
 // CLIENT PORTAL \u2014 Performance Report
 // ═══════════════════════════════════════════
 async function loadClientReport(client) {
-  const tbody = document.getElementById('client-report-tbody');
-  const banner = document.getElementById('client-status-banner');
+  var tbody  = document.getElementById('client-report-tbody');
+  var banner = document.getElementById('client-status-banner');
+  var wkWrap = document.getElementById('cp-week-selector-wrap');
 
   try {
-    const url = CONFIG.APPS_SCRIPT_URL + '?sheet_id=' + encodeURIComponent(client.sheet_id);
-    const resp = await fetch(url);
-    const data = await resp.json();
+    var url  = CONFIG.APPS_SCRIPT_URL + '?sheet_id=' + encodeURIComponent(client.sheet_id);
+    var resp = await fetch(url);
+    var data = await resp.json();
 
     if (data.error || !Array.isArray(data.rows)) {
       tbody.innerHTML = '<tr><td colspan="8" class="loading-row">No data available yet \u2014 check back after the weekly report runs.</td></tr>';
-      banner.innerHTML =
-        '<span class="client-status-emoji">\u23F3</span>' +
-        '<div><div class="client-status-label">No data yet</div>' +
-        '<div class="client-status-text">Data will appear after the first weekly report</div></div>';
+      banner.innerHTML = '<span class="client-status-emoji">\u23F3</span><div><div class="client-status-label">No data yet</div><div class="client-status-text">Data will appear after the first weekly report</div></div>';
       return;
     }
 
-    const rows = data.rows.filter(function(r) { return r[0] && String(r[0]).trim() !== ''; });
-
+    var rows = data.rows.filter(function(r) { return r[0] && String(r[0]).trim() !== ''; });
     if (rows.length === 0) {
       tbody.innerHTML = '<tr><td colspan="8" class="loading-row">No weekly data found yet.</td></tr>';
-      banner.innerHTML =
-        '<span class="client-status-emoji">\u23F3</span>' +
-        '<div><div class="client-status-label">No data yet</div>' +
-        '<div class="client-status-text">Data will appear after the first weekly report</div></div>';
+      banner.innerHTML = '<span class="client-status-emoji">\u23F3</span><div><div class="client-status-label">No data yet</div><div class="client-status-text">Data will appear after the first weekly report</div></div>';
       return;
     }
 
-    // Summary cards
-    const latestRow    = rows[rows.length - 1];
-    const summaryCards = document.getElementById('client-summary-cards');
-    if (summaryCards) {
-      const sc_total = (latestRow[30] !== '' && latestRow[30] !== null && latestRow[30] !== undefined) ? latestRow[30] : '\u2014';
-      const sc_np    = (latestRow[3]  !== '' && latestRow[3]  !== null && latestRow[3]  !== undefined) ? latestRow[3]  : '\u2014';
+    _cpAllRows = rows;
 
-      // Website Patients: sum across ALL weeks (col AF index 31)
-      const sc_wp_total = rows.reduce(function(sum, row) {
-        const v = parseFloat(row[31]);
-        return sum + (isNaN(v) ? 0 : v);
-      }, 0);
-      const sc_wp_has_data = sc_wp_total > 0;
-
-      summaryCards.innerHTML =
-        '<div class="client-summary-card">' +
-          '<div class="client-summary-card-value">' + sc_total + '</div>' +
-          '<div class="client-summary-card-label">Total Google Reviews</div>' +
-        '</div>' +
-        (sc_wp_has_data ?
-          '<div class="client-summary-card">' +
-            '<div class="client-summary-card-value">' + sc_wp_total + '</div>' +
-            '<div class="client-summary-card-label">Total Website Patients</div>' +
-          '</div>'
-        : '') +
-        '<div class="client-summary-card">' +
-          '<div class="client-summary-card-value">' + sc_np + '</div>' +
-          '<div class="client-summary-card-label">New Patients This Week</div>' +
-        '</div>';
-    }
-
-    // Compute overall strike count (consecutive bad rows from most recent)
-    let strikeCount = 0;
-    for (let i = rows.length - 1; i >= 0; i--) {
-      const row = rows[i];
-      const hook   = String(row[10] !== undefined ? row[10] : '').trim().toUpperCase();
-      const offer  = String(row[11] !== undefined ? row[11] : '').trim().toUpperCase();
-      const cancel = String(row[16] !== undefined ? row[16] : '').trim().toUpperCase();
-      if (hook === 'TRUE' || offer === 'TRUE' || cancel === 'TRUE') {
-        strikeCount++;
-      } else {
-        break;
-      }
-    }
-
-    // Status banner
-    var si;
-    if      (strikeCount === 0) si = { emoji:'\uD83D\uDFE2', label:'Healthy',                    text:'All metrics are on track',                                     color:'var(--green)'  };
-    else if (strikeCount === 1) si = { emoji:'\uD83D\uDFE1', label:'Strike 1 \u2014 Monitoring', text:'One consecutive bad week \u2014 being monitored',              color:'var(--yellow)' };
-    else if (strikeCount === 2) si = { emoji:'\uD83D\uDFE0', label:'Strike 2 \u2014 Action Required', text:'Two consecutive bad weeks \u2014 review recommended',     color:'var(--orange)' };
-    else                        si = { emoji:'\uD83D\uDD34', label:'Strike ' + strikeCount + ' \u2014 Escalated', text:'Multiple consecutive bad weeks \u2014 immediate attention needed', color:'var(--red)' };
-
-    const pulseDot = strikeCount === 0 ? '<span class="pulse-dot"></span>' : '';
-    banner.innerHTML =
-      '<span class="client-status-emoji">' + si.emoji + '</span>' +
-      '<div>' +
-        '<div class="client-status-label" style="color:' + si.color + '">' + pulseDot + si.label + '</div>' +
-        '<div class="client-status-text">' + si.text + '</div>' +
-      '</div>';
-
-    // Build weekly rows
-    tbody.innerHTML = '';
-    rows.forEach(function(row) {
-      const weekLabel  = escHtml(String(row[0] || '\u2014'));
-      const reviews    = (row[1] !== '' && row[1] !== null && row[1] !== undefined) ? row[1] : '\u2014';
-      const hookFlag   = String(row[10] !== undefined ? row[10] : '').trim().toUpperCase();
-      const offerFlag  = String(row[11] !== undefined ? row[11] : '').trim().toUpperCase();
-      const cancelRate = (row[15] !== '' && row[15] !== null && row[15] !== undefined) ? parseFloat(row[15]) : null;
-      const cancelFlag = String(row[16] !== undefined ? row[16] : '').trim().toUpperCase();
-
-      const hookBad   = hookFlag   === 'TRUE';
-      const offerBad  = offerFlag  === 'TRUE';
-      const cancelBad = cancelFlag === 'TRUE';
-      const rowBad    = hookBad || offerBad || cancelBad;
-
-      // Metric bar widths: hook/offer use representative values (good=78%, bad=38%)
-      const hookBarW   = hookFlag  === '' ? 0 : hookBad  ? 38 : 78;
-      const offerBarW  = offerFlag === '' ? 0 : offerBad ? 38 : 78;
-      const cancelBarW = (cancelRate !== null && !isNaN(cancelRate)) ? Math.min(cancelRate * 100, 100) : 0;
-
-      const hookBar  = hookFlag  === '' ? '' : '<div class="metric-bar"><div class="metric-fill' + (hookBad  ? ' fill-bad' : '') + '" data-target="' + hookBarW  + '"></div></div>';
-      const offerBar = offerFlag === '' ? '' : '<div class="metric-bar"><div class="metric-fill' + (offerBad ? ' fill-bad' : '') + '" data-target="' + offerBarW + '"></div></div>';
-      const cancelBar = cancelBarW > 0    ? '<div class="metric-bar"><div class="metric-fill fill-cancel'  + (cancelBad ? ' fill-bad' : '') + '" data-target="' + cancelBarW.toFixed(1) + '"></div></div>' : '';
-
-      const hookCell  = hookFlag  === '' ? '<span class="pill pill-gray">\u2014</span>'
-                      : hookBad           ? '<span class="pill pill-red">\u274C Flagged</span>'  + hookBar
-                      :                     '<span class="pill pill-green">\u2705 Good</span>'   + hookBar;
-      const offerCell = offerFlag === '' ? '<span class="pill pill-gray">\u2014</span>'
-                      : offerBad          ? '<span class="pill pill-red">\u274C Flagged</span>'  + offerBar
-                      :                     '<span class="pill pill-green">\u2705 Good</span>'   + offerBar;
-
-      var cancelCell;
-      if (cancelRate === null || isNaN(cancelRate)) {
-        cancelCell = '<span class="pill pill-gray">\u2014</span>';
-      } else {
-        const pct = (cancelRate * 100).toFixed(1) + '%';
-        cancelCell = cancelBad
-          ? '<span class="pill pill-red">\u274C '   + pct + '</span>' + cancelBar
-          : '<span class="pill pill-green">\u2705 ' + pct + '</span>' + cancelBar;
-      }
-
-      const rowStatus = rowBad
-        ? '<span class="pill pill-red">\u26A0\uFE0F Bad Week</span>'
-        : '<span class="pill pill-green">\u2705 Good Week</span>';
-
-      const totalReviews    = (row[30] !== '' && row[30] !== null && row[30] !== undefined) ? row[30] : '\u2014';
-      const _wp31 = row[31];
-      const websitePatients = (_wp31 !== '' && _wp31 !== null && _wp31 !== undefined && _wp31 !== 0 && _wp31 !== '0') ? _wp31 : '\u2014';
-
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td style="font-weight:500;white-space:nowrap">' + weekLabel + '</td>' +
-        '<td>' + reviews + '</td>' +
-        '<td>' + totalReviews + '</td>' +
-        '<td>' + websitePatients + '</td>' +
-        '<td>' + hookCell + '</td>' +
-        '<td>' + offerCell + '</td>' +
-        '<td>' + cancelCell + '</td>' +
-        '<td>' + rowStatus + '</td>';
-      tbody.appendChild(tr);
-    });
-
-    // Hide Website Patients column if every row has 0 or empty value
-    const allWpEmpty = rows.every(function(row) {
-      const v = row[31];
-      return v === '' || v === null || v === undefined || v === 0 || v === '0';
-    });
-    const clientTable = tbody.closest('table');
-    if (clientTable) {
-      if (allWpEmpty) clientTable.classList.add('hide-wp-col');
-      else            clientTable.classList.remove('hide-wp-col');
-    }
-
-    // Animate metric bars (trigger CSS transition after paint)
-    requestAnimationFrame(function() {
-      tbody.querySelectorAll('.metric-fill[data-target]').forEach(function(el) {
-        el.style.width = el.getAttribute('data-target') + '%';
+    // Build week selector
+    if (wkWrap) {
+      var selHtml = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
+        '<label style="font-size:13px;color:var(--muted)">' + _t('Viewing Week:', '\u0627\u0644\u0623\u0633\u0628\u0648\u0639:') + '</label>' +
+        '<select id="cp-week-sel" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px" onchange="_renderCpAll(parseInt(this.value))">';
+      rows.forEach(function(r, i) {
+        selHtml += '<option value="' + i + '"' + (i === rows.length - 1 ? ' selected' : '') + '>' + escHtml(String(r[0] || 'Week ' + (i + 1))) + '</option>';
       });
-    });
+      selHtml += '</select></div>';
+      wkWrap.innerHTML = selHtml;
+    }
+
+    _renderCpAll(rows.length - 1);
 
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="8" class="loading-row">Failed to load data. Please try again later.</td></tr>';
-    banner.innerHTML =
-      '<span class="client-status-emoji">\u26A0\uFE0F</span>' +
-      '<div><div class="client-status-label">Load error</div>' +
-      '<div class="client-status-text">' + escHtml(String(err)) + '</div></div>';
+    document.getElementById('client-report-tbody').innerHTML = '<tr><td colspan="8" class="loading-row">Failed to load data. Please try again later.</td></tr>';
+    document.getElementById('client-status-banner').innerHTML = '<span class="client-status-emoji">\u26A0\uFE0F</span><div><div class="client-status-label">Load error</div><div class="client-status-text">' + escHtml(String(err)) + '</div></div>';
+  }
+}
+
+function _renderCpAll(wkIdx) {
+  var rows = _cpAllRows;
+  if (!rows || rows.length === 0) return;
+  var idx = Math.max(0, Math.min(wkIdx, rows.length - 1));
+  var row = rows[idx];
+
+  // Sync selector
+  var sel = document.getElementById('cp-week-sel');
+  if (sel && parseInt(sel.value) !== idx) sel.value = idx;
+
+  // ── Status banner ──
+  var strikeCount = 0;
+  for (var si = rows.length - 1; si >= 0; si--) {
+    var _h = String(rows[si][10] !== undefined ? rows[si][10] : '').trim().toUpperCase();
+    var _o = String(rows[si][11] !== undefined ? rows[si][11] : '').trim().toUpperCase();
+    var _c = String(rows[si][16] !== undefined ? rows[si][16] : '').trim().toUpperCase();
+    if (_h === 'TRUE' || _o === 'TRUE' || _c === 'TRUE') strikeCount++;
+    else break;
+  }
+  var sInfo;
+  if      (strikeCount === 0) sInfo = { emoji:'\uD83D\uDFE2', label:_t('Healthy','\u0628\u062E\u064A\u0631'),                                         text:_t('All metrics on track','\u062C\u0645\u064A\u0639 \u0627\u0644\u0645\u0624\u0634\u0631\u0627\u062A \u062C\u064A\u062F\u0629'),           color:'var(--green)'  };
+  else if (strikeCount === 1) sInfo = { emoji:'\uD83D\uDFE1', label:_t('Strike 1 \u2014 Monitoring','\u062A\u062D\u0630\u064A\u0631 1'),                text:_t('One bad week \u2014 being monitored','\u0623\u0633\u0628\u0648\u0639 \u0636\u0639\u064A\u0641'),                        color:'var(--yellow)' };
+  else if (strikeCount === 2) sInfo = { emoji:'\uD83D\uDFE0', label:_t('Strike 2 \u2014 Action Required','\u062A\u062D\u0630\u064A\u0631 2'),           text:_t('Two bad weeks \u2014 review recommended','\u0623\u0633\u0628\u0648\u0639\u0627\u0646 \u0636\u0639\u064A\u0641\u0627\u0646'), color:'var(--orange)' };
+  else                        sInfo = { emoji:'\uD83D\uDD34', label:_t('Strike '+strikeCount+' \u2014 Escalated','\u062A\u062D\u0630\u064A\u0631 '+strikeCount), text:_t('Multiple bad weeks \u2014 immediate attention','\u062A\u062F\u062E\u0644 \u0641\u0648\u0631\u064A'), color:'var(--red)' };
+  var pulseDot = strikeCount === 0 ? '<span class="pulse-dot"></span>' : '';
+  var banner = document.getElementById('client-status-banner');
+  if (banner) banner.innerHTML =
+    '<span class="client-status-emoji">' + sInfo.emoji + '</span>' +
+    '<div><div class="client-status-label" style="color:' + sInfo.color + '">' + pulseDot + sInfo.label + '</div>' +
+    '<div class="client-status-text">' + sInfo.text + '</div></div>';
+
+  // ── Summary cards ──
+  var summaryCards = document.getElementById('client-summary-cards');
+  if (summaryCards) {
+    var sc_total = (row[30] !== '' && row[30] !== null && row[30] !== undefined) ? row[30] : '\u2014';
+    var sc_np    = (row[3]  !== '' && row[3]  !== null && row[3]  !== undefined) ? row[3]  : '\u2014';
+    var sc_wp    = rows.reduce(function(s, r) { var v = parseFloat(r[31]); return s + (isNaN(v) ? 0 : v); }, 0);
+    summaryCards.innerHTML =
+      '<div class="client-summary-card"><div class="client-summary-card-value">' + sc_total + '</div><div class="client-summary-card-label">' + _t('Total Google Reviews', '\u0625\u062C\u0645\u0627\u0644\u064A \u0627\u0644\u062A\u0642\u064A\u064A\u0645\u0627\u062A') + '</div></div>' +
+      (sc_wp > 0 ? '<div class="client-summary-card"><div class="client-summary-card-value">' + sc_wp + '</div><div class="client-summary-card-label">' + _t('Total Website Patients', '\u0645\u0631\u0636\u0649 \u0627\u0644\u0645\u0648\u0642\u0639') + '</div></div>' : '') +
+      '<div class="client-summary-card"><div class="client-summary-card-value">' + sc_np + '</div><div class="client-summary-card-label">' + _t('New Patients This Week', '\u0645\u0631\u0636\u0649 \u062C\u062F\u062F \u0647\u0630\u0627 \u0627\u0644\u0623\u0633\u0628\u0648\u0639') + '</div></div>';
+  }
+
+  // ── Comparison card ──
+  var compWrap = document.getElementById('cp-comparison-wrap');
+  if (compWrap) {
+    if (idx > 0) {
+      var prevRow = rows[idx - 1];
+      var cRevs = parseFloat(row[1]) || 0, pRevs = parseFloat(prevRow[1]) || 0;
+      var cNP   = parseFloat(row[3]) || 0, pNP   = parseFloat(prevRow[3]) || 0;
+      function _delta(cur, prev) {
+        var d = cur - prev;
+        return d > 0 ? '<span style="color:var(--green)">\u2191 +' + d + '</span>'
+             : d < 0 ? '<span style="color:var(--red)">\u2193 '   + d + '</span>'
+             :         '<span style="color:var(--muted)">\u2192 0</span>';
+      }
+      compWrap.innerHTML =
+        '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">' +
+          '<div style="font-weight:700;margin-bottom:12px;font-size:14px">\uD83D\uDCCA ' + _t('Week-over-Week', '\u0645\u0642\u0627\u0631\u0646\u0629 \u0627\u0644\u0623\u0633\u0628\u0648\u0639') +
+          ' <span style="font-size:12px;color:var(--muted)">vs ' + escHtml(String(prevRow[0]||'')) + '</span></div>' +
+          '<div style="display:flex;gap:24px;flex-wrap:wrap">' +
+            '<div><div style="font-size:12px;color:var(--muted)">' + _t('New Reviews','\u062A\u0642\u064A\u064A\u0645\u0627\u062A') + '</div><div style="font-size:22px;font-weight:700">' + cRevs + ' ' + _delta(cRevs,pRevs) + '</div></div>' +
+            '<div><div style="font-size:12px;color:var(--muted)">' + _t('New Patients','\u0645\u0631\u0636\u0649')             + '</div><div style="font-size:22px;font-weight:700">' + cNP  + ' ' + _delta(cNP,pNP)   + '</div></div>' +
+          '</div>' +
+        '</div>';
+    } else { compWrap.innerHTML = ''; }
+  }
+
+  // ── Next Steps ──
+  var nsWrap = document.getElementById('cp-nextsteps-wrap');
+  if (nsWrap) {
+    var hookBad2   = String(row[10]||'').trim().toUpperCase() === 'TRUE';
+    var offerBad2  = String(row[11]||'').trim().toUpperCase() === 'TRUE';
+    var cancelBad2 = String(row[16]||'').trim().toUpperCase() === 'TRUE';
+    var steps = [];
+    if (hookBad2)   steps.push(_t('\u26A0\uFE0F Hook rate is below target \u2014 review your messaging to reduce no-shows.',    '\u26A0\uFE0F \u0645\u0639\u062F\u0644 \u0627\u0644\u0631\u062F \u0645\u0646\u062E\u0641\u0636 \u2014 \u0631\u0627\u062C\u0639 \u0627\u0644\u0631\u0633\u0627\u0626\u0644.'));
+    if (offerBad2)  steps.push(_t('\u26A0\uFE0F Offer engagement is low \u2014 consider updating your current promotion.',       '\u26A0\uFE0F \u062A\u0641\u0627\u0639\u0644 \u0627\u0644\u0639\u0631\u0636 \u0645\u0646\u062E\u0641\u0636 \u2014 \u062D\u062F\u0651\u062B \u0627\u0644\u0639\u0631\u0636.'));
+    if (cancelBad2) steps.push(_t('\u26A0\uFE0F High cancellation rate \u2014 follow up with patients to reschedule.',           '\u26A0\uFE0F \u0645\u0639\u062F\u0644 \u0625\u0644\u063A\u0627\u0621 \u0645\u0631\u062A\u0641\u0639 \u2014 \u062A\u0627\u0628\u0639 \u0645\u0639 \u0627\u0644\u0645\u0631\u0636\u0649.'));
+    if (steps.length === 0) steps.push(_t('\u2705 Great week! Keep up the current strategy.', '\u2705 \u0623\u0633\u0628\u0648\u0639 \u0631\u0627\u0626\u0639! \u0627\u0633\u062A\u0645\u0631 \u0628\u0627\u0644\u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A\u0629 \u0627\u0644\u062D\u0627\u0644\u064A\u0629.'));
+    nsWrap.innerHTML =
+      '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">' +
+        '<div style="font-weight:700;margin-bottom:10px;font-size:14px">\uD83C\uDFAF ' + _t('Next Steps', '\u0627\u0644\u062E\u0637\u0648\u0627\u062A \u0627\u0644\u062A\u0627\u0644\u064A\u0629') + '</div>' +
+        '<ul style="margin:0;padding-left:18px;line-height:1.8">' +
+        steps.map(function(s) { return '<li style="font-size:13px">' + s + '</li>'; }).join('') +
+        '</ul></div>';
+  }
+
+  // ── Weekly performance table ──
+  var tbody2 = document.getElementById('client-report-tbody');
+  if (tbody2) {
+    tbody2.innerHTML = '';
+    rows.forEach(function(r) {
+      var weekLabel  = escHtml(String(r[0] || '\u2014'));
+      var reviews    = (r[1] !== '' && r[1] !== null && r[1] !== undefined) ? r[1] : '\u2014';
+      var hookFlag   = String(r[10] !== undefined ? r[10] : '').trim().toUpperCase();
+      var offerFlag  = String(r[11] !== undefined ? r[11] : '').trim().toUpperCase();
+      var cancelRate = (r[15] !== '' && r[15] !== null && r[15] !== undefined) ? parseFloat(r[15]) : null;
+      var cancelFlag = String(r[16] !== undefined ? r[16] : '').trim().toUpperCase();
+      var hookBad3   = hookFlag === 'TRUE', offerBad3 = offerFlag === 'TRUE', cancelBad3 = cancelFlag === 'TRUE';
+      var rowBad3    = hookBad3 || offerBad3 || cancelBad3;
+      var hookBarW   = hookFlag  === '' ? 0 : hookBad3  ? 38 : 78;
+      var offerBarW  = offerFlag === '' ? 0 : offerBad3 ? 38 : 78;
+      var cancelBarW = (cancelRate !== null && !isNaN(cancelRate)) ? Math.min(cancelRate * 100, 100) : 0;
+      var hookBar3   = hookFlag  === '' ? '' : '<div class="metric-bar"><div class="metric-fill' + (hookBad3  ? ' fill-bad' : '') + '" style="width:' + hookBarW  + '%"></div></div>';
+      var offerBar3  = offerFlag === '' ? '' : '<div class="metric-bar"><div class="metric-fill' + (offerBad3 ? ' fill-bad' : '') + '" style="width:' + offerBarW + '%"></div></div>';
+      var cancelBar3 = cancelBarW > 0 ? '<div class="metric-bar"><div class="metric-fill fill-cancel' + (cancelBad3 ? ' fill-bad' : '') + '" style="width:' + cancelBarW.toFixed(1) + '%"></div></div>' : '';
+      var hookCell3  = hookFlag  === '' ? '<span class="pill pill-gray">\u2014</span>' : hookBad3  ? '<span class="pill pill-red">\u274C ' + _t('Flagged','\u0645\u0639\u0644\u0651\u0645') + '</span>' + hookBar3  : '<span class="pill pill-green">\u2705 ' + _t('Good','\u062C\u064A\u062F') + '</span>' + hookBar3;
+      var offerCell3 = offerFlag === '' ? '<span class="pill pill-gray">\u2014</span>' : offerBad3 ? '<span class="pill pill-red">\u274C ' + _t('Flagged','\u0645\u0639\u0644\u0651\u0645') + '</span>' + offerBar3 : '<span class="pill pill-green">\u2705 ' + _t('Good','\u062C\u064A\u062F') + '</span>' + offerBar3;
+      var cancelCell3;
+      if (cancelRate === null || isNaN(cancelRate)) {
+        cancelCell3 = '<span class="pill pill-gray">\u2014</span>';
+      } else {
+        var cpct = (cancelRate * 100).toFixed(1) + '%';
+        cancelCell3 = cancelBad3 ? '<span class="pill pill-red">\u274C ' + cpct + '</span>' + cancelBar3 : '<span class="pill pill-green">\u2705 ' + cpct + '</span>' + cancelBar3;
+      }
+      var rowStatus3  = rowBad3 ? '<span class="pill pill-red">\u26A0\uFE0F ' + _t('Bad Week','\u0623\u0633\u0628\u0648\u0639 \u0633\u064A\u0626') + '</span>' : '<span class="pill pill-green">\u2705 ' + _t('Good Week','\u0623\u0633\u0628\u0648\u0639 \u062C\u064A\u062F') + '</span>';
+      var totalRevs3  = (r[30] !== '' && r[30] !== null && r[30] !== undefined) ? r[30] : '\u2014';
+      var wp31        = r[31];
+      var webPats3    = (wp31 !== '' && wp31 !== null && wp31 !== undefined && wp31 !== 0 && wp31 !== '0') ? wp31 : '\u2014';
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td style="font-weight:500;white-space:nowrap">' + weekLabel + '</td>' +
+        '<td>' + reviews + '</td><td>' + totalRevs3 + '</td><td>' + webPats3 + '</td>' +
+        '<td>' + hookCell3 + '</td><td>' + offerCell3 + '</td><td>' + cancelCell3 + '</td><td>' + rowStatus3 + '</td>';
+      tbody2.appendChild(tr);
+    });
+    var allWpEmpty = rows.every(function(r) { var v=r[31]; return v===''||v===null||v===undefined||v===0||v==='0'; });
+    var clientTable = tbody2.closest('table');
+    if (clientTable) { allWpEmpty ? clientTable.classList.add('hide-wp-col') : clientTable.classList.remove('hide-wp-col'); }
+  }
+
+  // ── Milestone tracker ──
+  var msWrap = document.getElementById('cp-milestone-wrap');
+  if (msWrap) {
+    var totalRevs4 = parseFloat(row[30]) || 0;
+    var milestones = [50,100,150,200,250,300,400,500,750,1000];
+    var nextMs = milestones.find(function(m) { return m > totalRevs4; });
+    if (nextMs && (nextMs - totalRevs4) <= 20) {
+      var gap4 = nextMs - totalRevs4;
+      var pct4 = Math.round((totalRevs4 / nextMs) * 100);
+      msWrap.innerHTML =
+        '<div style="background:linear-gradient(135deg,#1e1b4b,#312e81);border:1px solid #4f46e5;border-radius:10px;padding:16px;margin-bottom:16px">' +
+          '<div style="font-weight:700;margin-bottom:8px;font-size:14px">\uD83C\uDFC6 ' + _t('Milestone Alert!', '\u062A\u0646\u0628\u064A\u0647 \u0625\u0646\u062C\u0627\u0632!') + '</div>' +
+          '<div style="font-size:13px;color:#c7d2fe">' + _t("You're only <b>" + gap4 + "</b> reviews away from your <b>" + nextMs + " reviews</b> milestone!", '\u0623\u0646\u062A \u0639\u0644\u0649 \u0628\u0639\u062F <b>' + gap4 + '</b> \u062A\u0642\u064A\u064A\u0645 \u0645\u0646 <b>' + nextMs + '</b>!') + '</div>' +
+          '<div style="margin-top:10px;background:rgba(255,255,255,0.1);border-radius:6px;height:8px"><div style="background:#818cf8;border-radius:6px;height:8px;width:' + pct4 + '%"></div></div>' +
+          '<div style="font-size:11px;color:#a5b4fc;margin-top:4px">' + totalRevs4 + ' / ' + nextMs + ' reviews</div>' +
+        '</div>';
+    } else { msWrap.innerHTML = ''; }
+  }
+
+  // ── Past weeks history ──
+  var histWrap = document.getElementById('cp-history-wrap');
+  if (histWrap) {
+    var histRows = rows.slice(0, idx).reverse().slice(0, 5);
+    if (histRows.length > 0) {
+      var histHtml =
+        '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">' +
+        '<details><summary style="font-weight:700;font-size:14px;cursor:pointer">\uD83D\uDDD3\uFE0F ' + _t('Past Weeks History', '\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0623\u0633\u0627\u0628\u064A\u0639 \u0627\u0644\u0645\u0627\u0636\u064A\u0629') + '</summary>' +
+        '<div style="margin-top:12px;overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse">' +
+        '<thead><tr>' +
+          '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">' + _t('Week','\u0627\u0644\u0623\u0633\u0628\u0648\u0639') + '</th>' +
+          '<th style="padding:4px 8px;border-bottom:1px solid var(--border)">' + _t('Reviews','\u062A\u0642\u064A\u064A\u0645\u0627\u062A') + '</th>' +
+          '<th style="padding:4px 8px;border-bottom:1px solid var(--border)">Hook</th>' +
+          '<th style="padding:4px 8px;border-bottom:1px solid var(--border)">Offer</th>' +
+          '<th style="padding:4px 8px;border-bottom:1px solid var(--border)">' + _t('Status','\u0627\u0644\u062D\u0627\u0644\u0629') + '</th>' +
+        '</tr></thead><tbody>';
+      histRows.forEach(function(r) {
+        var hk = String(r[10]||'').trim().toUpperCase() === 'TRUE';
+        var of = String(r[11]||'').trim().toUpperCase() === 'TRUE';
+        var cn = String(r[16]||'').trim().toUpperCase() === 'TRUE';
+        var hbad = hk || of || cn;
+        histHtml += '<tr>' +
+          '<td style="padding:4px 8px;white-space:nowrap">' + escHtml(String(r[0]||'')) + '</td>' +
+          '<td style="text-align:center;padding:4px 8px">' + (r[1]||'\u2014') + '</td>' +
+          '<td style="text-align:center;padding:4px 8px">' + (hk ? '\u274C' : '\u2705') + '</td>' +
+          '<td style="text-align:center;padding:4px 8px">' + (of ? '\u274C' : '\u2705') + '</td>' +
+          '<td style="text-align:center;padding:4px 8px">' + (hbad ? '<span style="color:var(--red)">\u26A0\uFE0F ' + _t('Bad','\u0633\u064A\u0626') + '</span>' : '<span style="color:var(--green)">\u2705 ' + _t('Good','\u062C\u064A\u062F') + '</span>') + '</td>' +
+        '</tr>';
+      });
+      histHtml += '</tbody></table></div></details></div>';
+      histWrap.innerHTML = histHtml;
+    } else { histWrap.innerHTML = ''; }
+  }
+
+  // ── WhatsApp share ──
+  var waWrap = document.getElementById('cp-whatsapp-wrap');
+  if (waWrap) {
+    waWrap.innerHTML =
+      '<div style="text-align:center;margin:16px 0">' +
+        '<button onclick="_cpShareWA()" style="background:#25D366;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer">' +
+          '\uD83D\uDCF1 ' + _t('Share via WhatsApp', '\u0645\u0634\u0627\u0631\u0643\u0629 \u0639\u0628\u0631 \u0648\u0627\u062A\u0633\u0622\u0628') +
+        '</button>' +
+      '</div>';
   }
 }
 
