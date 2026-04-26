@@ -1390,28 +1390,53 @@ async function loadNotes() {
     ? CONFIG.CLIENTS.filter(function(c) { return c.contact_id === clientFilter; })
     : CONFIG.CLIENTS;
 
+  // Build week label exactly as it appears in note bodies: "Sat 28/3 – Thu 2/4"
+  const weekLabel = 'Sat ' + fmtDate(week.start, true) + ' \u2013 Thu ' + fmtDate(week.end, true);
+  const _dateMatch = weekLabel.match(/(\d+\/\d+)\s*[\u2013-]\s*(\d+\/\d+)/);
+
+  function noteMatchesWeek(note) {
+    if (!note.body) return false;
+    if (note.body.includes(weekLabel)) return true;
+    if (_dateMatch && (note.body.includes(_dateMatch[1]) || note.body.includes(_dateMatch[2]))) return true;
+    return false;
+  }
+
   const allNotes = [];
+  const allRecentNotes = [];
+  const cutoff30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
   await Promise.all(clients.map(async function(client) {
     try {
       const resp = await fetch(GHL_BASE + '/contacts/' + client.contact_id + '/notes', { headers: headers });
       if (!resp.ok) return;
       const data = await resp.json();
       (data.notes || []).forEach(function(note) {
-        const d = new Date(note.dateAdded);
-        if (d >= week.start && d <= week.end) {
-          allNotes.push({ client: client.name, date: note.dateAdded, body: note.body || '' });
+        const entry = { client: client.name, date: note.dateAdded, body: note.body || '' };
+        if (noteMatchesWeek(note)) {
+          allNotes.push(entry);
+        } else if (new Date(note.dateAdded) >= cutoff30) {
+          allRecentNotes.push(entry);
         }
       });
     } catch (e) { /* skip */ }
   }));
 
   allNotes.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+  allRecentNotes.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+
+  const useFallback = allNotes.length === 0;
+  const displayNotes = useFallback ? allRecentNotes : allNotes;
+
   tbody.innerHTML = '';
-  if (allNotes.length === 0) {
+  if (displayNotes.length === 0) {
     tbody.innerHTML = '<tr><td colspan="3" class="loading-row">No notes found for this week</td></tr>';
     return;
   }
-  allNotes.forEach(function(note, i) {
+  if (useFallback) {
+    tbody.innerHTML = '<tr><td colspan="3" style="background:#fffbeb;color:#92400e;padding:10px 14px;font-size:13px;border-bottom:1px solid #fde68a">' +
+      '\u26A0\uFE0F Showing all recent notes \u2014 no week-specific matches found for <b>' + escHtml(weekLabel) + '</b></td></tr>';
+  }
+  displayNotes.forEach(function(note, i) {
     const preview = note.body.replace(/\n/g, ' ').slice(0, 100) + (note.body.length > 100 ? '\u2026' : '');
     const tr = document.createElement('tr');
     tr.innerHTML =
