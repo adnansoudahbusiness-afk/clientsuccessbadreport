@@ -945,6 +945,16 @@
     <div class="client-summary-cards" id="client-summary-cards"></div>
     <div id="cp-comparison-wrap"></div>
     <div id="cp-nextsteps-wrap"></div>
+    <div id="cp-info-card" style="margin-bottom:12px">
+      <details style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px">
+        <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--muted)">&#8505;&#65039; How We Calculate This</summary>
+        <div style="margin-top:10px;font-size:12px;line-height:2;color:var(--text)">
+          <div><b>Hook %</b> = Trigger Links Clicked &divide; New Patients &nbsp;<span style="color:var(--green)">&#9989; target: 60%+</span></div>
+          <div><b>Offer %</b> = New Reviews &divide; Trigger Links &nbsp;<span style="color:var(--green)">&#9989; target: 60%+</span></div>
+          <div><b>Cancellation Rate</b> = Cancelled Appointments &divide; Booked &nbsp;<span style="color:var(--green)">&#9989; target: below 25%</span></div>
+        </div>
+      </details>
+    </div>
     <div id="cp-table-section">
       <div class="section-title" id="cp-table-title">Weekly Performance Breakdown</div>
       <div class="table-wrap">
@@ -955,6 +965,9 @@
               <th>New Reviews</th>
               <th>Total Reviews</th>
               <th>Website Patients</th>
+              <th>Trigger Links</th>
+              <th>Hook %</th>
+              <th>Offer %</th>
               <th>Hook</th>
               <th>Offer</th>
               <th>Cancel Rate</th>
@@ -962,7 +975,7 @@
             </tr>
           </thead>
           <tbody id="client-report-tbody">
-            <tr><td colspan="8" class="loading-row"><span class="spinner"></span> Loading your report&hellip;</td></tr>
+            <tr><td colspan="11" class="loading-row"><span class="spinner"></span> Loading your report&hellip;</td></tr>
           </tbody>
         </table>
       </div>
@@ -2658,14 +2671,14 @@ async function loadClientReport(client) {
     var data = await resp.json();
 
     if (data.error || !Array.isArray(data.rows)) {
-      tbody.innerHTML = '<tr><td colspan="8" class="loading-row">No data available yet \u2014 check back after the weekly report runs.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" class="loading-row">No data available yet \u2014 check back after the weekly report runs.</td></tr>';
       banner.innerHTML = '<span class="client-status-emoji">\u23F3</span><div><div class="client-status-label">No data yet</div><div class="client-status-text">Data will appear after the first weekly report</div></div>';
       return;
     }
 
     var rows = data.rows.filter(function(r) { return r[0] && String(r[0]).trim() !== ''; });
     if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="loading-row">No weekly data found yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" class="loading-row">No weekly data found yet.</td></tr>';
       banner.innerHTML = '<span class="client-status-emoji">\u23F3</span><div><div class="client-status-label">No data yet</div><div class="client-status-text">Data will appear after the first weekly report</div></div>';
       return;
     }
@@ -2687,7 +2700,7 @@ async function loadClientReport(client) {
     _renderCpAll(rows.length - 1);
 
   } catch (err) {
-    document.getElementById('client-report-tbody').innerHTML = '<tr><td colspan="8" class="loading-row">Failed to load data. Please try again later.</td></tr>';
+    document.getElementById('client-report-tbody').innerHTML = '<tr><td colspan="11" class="loading-row">Failed to load data. Please try again later.</td></tr>';
     document.getElementById('client-status-banner').innerHTML = '<span class="client-status-emoji">\u26A0\uFE0F</span><div><div class="client-status-label">Load error</div><div class="client-status-text">' + escHtml(String(err)) + '</div></div>';
   }
 }
@@ -2731,7 +2744,7 @@ function _renderCpAll(wkIdx) {
     var sc_wp    = rows.reduce(function(s, r) { var v = parseFloat(r[31]); return s + (isNaN(v) ? 0 : v); }, 0);
     summaryCards.innerHTML =
       '<div class="client-summary-card"><div class="client-summary-card-value">' + sc_total + '</div><div class="client-summary-card-label">' + _t('Total Google Reviews', '\u0625\u062C\u0645\u0627\u0644\u064A \u0627\u0644\u062A\u0642\u064A\u064A\u0645\u0627\u062A') + '</div></div>' +
-      (sc_wp > 0 ? '<div class="client-summary-card"><div class="client-summary-card-value">' + sc_wp + '</div><div class="client-summary-card-label">' + _t('Total Website Patients', '\u0645\u0631\u0636\u0649 \u0627\u0644\u0645\u0648\u0642\u0639') + '</div></div>' : '') +
+      (sc_wp > 0 ? '<div class="client-summary-card"><div class="client-summary-card-value">' + sc_wp + '</div><div class="client-summary-card-label">' + _t('Website Patients (All Weeks)', '\u0645\u0631\u0636\u0649 \u0627\u0644\u0645\u0648\u0642\u0639 (\u0643\u0644 \u0627\u0644\u0623\u0633\u0627\u0628\u064A\u0639)') + '</div></div>' : '') +
       '<div class="client-summary-card"><div class="client-summary-card-value">' + sc_np + '</div><div class="client-summary-card-label">' + _t('New Patients This Week', '\u0645\u0631\u0636\u0649 \u062C\u062F\u062F \u0647\u0630\u0627 \u0627\u0644\u0623\u0633\u0628\u0648\u0639') + '</div></div>';
   }
 
@@ -2792,6 +2805,22 @@ function _renderCpAll(wkIdx) {
       var cancelFlag = String(r[16] !== undefined ? r[16] : '').trim().toUpperCase();
       var hookBad3   = hookFlag === 'TRUE', offerBad3 = offerFlag === 'TRUE', cancelBad3 = cancelFlag === 'TRUE';
       var rowBad3    = hookBad3 || offerBad3 || cancelBad3;
+
+      // Raw calculation inputs (col 7 = H = Trigger Links, col 8 = I = Hook%, col 9 = J = Offer%)
+      var triggerLinks = (r[7] !== '' && r[7] !== null && r[7] !== undefined) ? parseFloat(r[7]) : null;
+      var hookPctRaw   = (r[8] !== '' && r[8] !== null && r[8] !== undefined) ? parseFloat(r[8]) : null;
+      var offerPctRaw  = (r[9] !== '' && r[9] !== null && r[9] !== undefined) ? parseFloat(r[9]) : null;
+
+      var triggerCell3 = (triggerLinks === null || isNaN(triggerLinks)) ? '<span class="pill pill-gray">\u2014</span>' : String(Math.round(triggerLinks));
+      function _pctCell(val, bad) {
+        if (val === null || isNaN(val)) return '<span class="pill pill-gray">\u2014</span>';
+        var pctStr = (val * 100).toFixed(1) + '%';
+        return bad ? '<span class="pill pill-red" style="font-weight:700">' + pctStr + '</span>'
+                   : '<span class="pill pill-green" style="font-weight:700">' + pctStr + '</span>';
+      }
+      var hookPctCell3  = _pctCell(hookPctRaw,  hookBad3);
+      var offerPctCell3 = _pctCell(offerPctRaw, offerBad3);
+
       var hookBarW   = hookFlag  === '' ? 0 : hookBad3  ? 38 : 78;
       var offerBarW  = offerFlag === '' ? 0 : offerBad3 ? 38 : 78;
       var cancelBarW = (cancelRate !== null && !isNaN(cancelRate)) ? Math.min(cancelRate * 100, 100) : 0;
@@ -2815,6 +2844,8 @@ function _renderCpAll(wkIdx) {
       tr.innerHTML =
         '<td style="font-weight:500;white-space:nowrap">' + weekLabel + '</td>' +
         '<td>' + reviews + '</td><td>' + totalRevs3 + '</td><td>' + webPats3 + '</td>' +
+        '<td style="text-align:center">' + triggerCell3 + '</td>' +
+        '<td>' + hookPctCell3 + '</td><td>' + offerPctCell3 + '</td>' +
         '<td>' + hookCell3 + '</td><td>' + offerCell3 + '</td><td>' + cancelCell3 + '</td><td>' + rowStatus3 + '</td>';
       tbody2.appendChild(tr);
     });
