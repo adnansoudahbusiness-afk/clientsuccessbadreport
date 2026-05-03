@@ -1348,6 +1348,8 @@ async function submitAllReviews() {
 
   const weekLabel = getSelectedWeekLabel();
   let ok = 0, total = 0;
+  const submitted = []; // track {i, client, revVal} for post-submit verification
+
   const promises = CONFIG.CLIENTS.map(async function(client, i) {
     const revInput = document.getElementById('rev-' + i);
     const wpInput  = document.getElementById('wp-' + i);
@@ -1374,6 +1376,7 @@ async function submitAllReviews() {
         });
         ok++;
         statusEl.innerHTML = '<span class="pill pill-green">\u2705 Submitted</span>';
+        submitted.push({ i: i, client: client, revVal: revVal });
       } catch (e) {
         rowOk = false;
         statusEl.innerHTML = '<span class="pill pill-red">\u274C Network Error</span>';
@@ -1399,6 +1402,39 @@ async function submitAllReviews() {
   if (total === 0) {
     summary.textContent = 'No values entered.';
     summary.className = 'summary-msg';
+    return;
+  }
+  summary.textContent = ok + '/' + total + ' submitted \u2014 verifying\u2026';
+  summary.className = 'summary-msg';
+
+  // Verification: wait 2s then read each sheet via doGet to confirm the value landed
+  if (submitted.length > 0) {
+    await new Promise(function(res) { setTimeout(res, 2000); });
+    let verified = 0;
+    await Promise.all(submitted.map(async function(entry) {
+      const statusEl = document.getElementById('rev-status-' + entry.i);
+      try {
+        const resp = await fetch(
+          CONFIG.APPS_SCRIPT_URL + '?sheet_id=' + encodeURIComponent(entry.client.sheet_id)
+        );
+        const data = await resp.json();
+        const rows = data.rows || [];
+        const matchRow = rows.find(function(r) {
+          return r[0] && String(r[0]).trim() === weekLabel;
+        });
+        const sheetVal = matchRow ? parseInt(matchRow[1], 10) : null;
+        if (sheetVal === entry.revVal) {
+          statusEl.innerHTML = '<span class="pill pill-green">\u2705 Verified</span>';
+          verified++;
+        } else {
+          statusEl.innerHTML = '<span class="pill pill-orange">\u26A0\uFE0F Check sheet manually</span>';
+        }
+      } catch (e) {
+        statusEl.innerHTML = '<span class="pill pill-orange">\u26A0\uFE0F Check sheet manually</span>';
+      }
+    }));
+    summary.textContent = ok + '/' + total + ' submitted \u2014 ' + verified + '/' + submitted.length + ' verified';
+    summary.className = (ok === total && verified === submitted.length) ? 'summary-msg ok' : 'summary-msg err';
   } else {
     summary.textContent = ok + '/' + total + ' submitted successfully';
     summary.className = ok === total ? 'summary-msg ok' : 'summary-msg err';
