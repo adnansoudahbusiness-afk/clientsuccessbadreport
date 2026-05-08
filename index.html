@@ -1253,19 +1253,19 @@ function switchTab(tabId, btn) {
 // DATE HELPERS
 // ═══════════════════════════════════════════
 function getWeekBounds(ref) {
-  // Always calculate in Asia/Amman (UTC+3)
+  // Always calculate in Asia/Amman (UTC+3). Week: Saturday 00:00 → Friday 23:59.
   const localStr = (ref || new Date()).toLocaleString('en-US', { timeZone: 'Asia/Amman' });
   const d = new Date(localStr);
   const day = d.getDay(); // Sun=0, Mon=1, ..., Fri=5, Sat=6
-  // Sat→0, Sun→1, Mon→2, Tue→3, Wed→4, Thu→5, Fri→6 (completed week)
+  // Sat→0, Sun→1, Mon→2, Tue→3, Wed→4, Thu→5, Fri→6
   const daysSinceSat = (day + 1) % 7;
   const sat = new Date(d);
   sat.setDate(d.getDate() - daysSinceSat);
   sat.setHours(0, 0, 0, 0);
-  const thu = new Date(sat);
-  thu.setDate(sat.getDate() + 5);
-  thu.setHours(23, 59, 59, 999);
-  return { start: sat, end: thu };
+  const fri = new Date(sat);
+  fri.setDate(sat.getDate() + 6);
+  fri.setHours(23, 59, 59, 999);
+  return { start: sat, end: fri };
 }
 
 function last12Weeks() {
@@ -1311,29 +1311,30 @@ function buildTab1Weeks() {
     { label: "Week 4 \u2014 Sat 11/4 \u2013 Thu 16/4", week: "Sat 11/4 \u2013 Thu 16/4" },
     { label: "Week 5 \u2014 Sat 18/4 \u2013 Thu 23/4", week: "Sat 18/4 \u2013 Thu 23/4" },
     { label: "Week 6 \u2014 Sat 25/4 \u2013 Thu 30/4", week: "Sat 25/4 \u2013 Thu 30/4" },
+    { label: "Week 7 \u2014 Sat 2/5 \u2013 Fri 8/5",   week: "Sat 2/5 \u2013 Fri 8/5"   },
   ];
 
   // Current Amman date for week calculations
   const nowAmman = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Amman' }));
   const day = nowAmman.getDay(); // Sun=0, Mon=1, ..., Fri=5, Sat=6
-  const daysSinceSat = (day + 1) % 7; // Sat\u21920, Fri\u21926 (just-completed week)
+  const daysSinceSat = (day + 1) % 7; // Sat\u21920, Fri\u21926
   const baseSat = new Date(nowAmman);
   baseSat.setDate(nowAmman.getDate() - daysSinceSat);
   baseSat.setHours(0, 0, 0, 0);
 
-  // Pre-compute current week string for default selection
-  const curThu = new Date(baseSat);
-  curThu.setDate(baseSat.getDate() + 5);
-  const curWeekStr = 'Sat ' + fmtDate(baseSat, true) + ' \u2013 Thu ' + fmtDate(curThu, true);
+  // Pre-compute current week string (Sat\u2013Fri) for default selection
+  const curFri = new Date(baseSat);
+  curFri.setDate(baseSat.getDate() + 6);
+  const curWeekStr = 'Sat ' + fmtDate(baseSat, true) + ' \u2013 Fri ' + fmtDate(curFri, true);
 
   // Add current week + up to 3 future weeks (4 total), skipping duplicates
   const seen = new Set(hardcoded.map(function(h) { return h.week; }));
   for (var i = 0; i < 4; i++) {
     var wSat = new Date(baseSat);
     wSat.setDate(baseSat.getDate() + i * 7);
-    var wThu = new Date(wSat);
-    wThu.setDate(wSat.getDate() + 5);
-    var weekStr = 'Sat ' + fmtDate(wSat, true) + ' \u2013 Thu ' + fmtDate(wThu, true);
+    var wFri = new Date(wSat);
+    wFri.setDate(wSat.getDate() + 6);
+    var weekStr = 'Sat ' + fmtDate(wSat, true) + ' \u2013 Fri ' + fmtDate(wFri, true);
     if (!seen.has(weekStr)) {
       seen.add(weekStr);
       hardcoded.push({ label: weekStr, week: weekStr });
