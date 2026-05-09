@@ -274,6 +274,7 @@
     .pill-green  { background: var(--green-lt);  color: var(--green);  }
     .pill-red    { background: var(--red-lt);    color: var(--red);    }
     .pill-orange { background: var(--orange-lt); color: var(--orange); }
+    .pill-amber  { background: #FEF3C7;          color: #92400E;       }
     .pill-gray   { background: var(--bg3);       color: var(--muted);  }
     .pill-blue   { background: var(--blue-lt);   color: var(--blue);   }
 
@@ -608,7 +609,7 @@
       background: linear-gradient(90deg, #A899DB, #7c6db5);
       transition: width 1s ease;
     }
-    .metric-fill.fill-bad    { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    .metric-fill.fill-bad    { background: linear-gradient(90deg, #F59E0B, #d97706); }
     .metric-fill.fill-cancel { background: linear-gradient(90deg, #A899DB, #7c6db5); }
 
     @media (max-width: 640px) {
@@ -1043,7 +1044,8 @@ const CONFIG = {
     {name:"Al Mughrabi Dental Clinic",               contact_id:"nXob2y6qVBjAsRtSABPV", sheet_id:"1CHwT_tgGtyD4ZC0ZmvbG1DLA5SjXWIhRsy2n5tKa_Ko"},
     {name:"Vogue Dental Clinic",                     contact_id:"lqAy8b7HVZEiHU2Wms39", sheet_id:"1q9QuiJHb5TSFq406qyUoKaWivctKkkEew3WgeSd0egk"},
     {name:"Salamati Medical Center",                 contact_id:"NGfNgdVRUng1Nv7emFOz", sheet_id:"1q1fvV1CM_cVAORtd93MRb6jlQ9VFTsl-deYIYyBOPNw"},
-    {name:"Sofia Medical Center",                    contact_id:"SZ7rheGGrcXIPxXzpUn5", sheet_id:"1vZk2StW6KsQJ5cUMPp88I3RUlbuw-mMxH8kPflnlPnA"}
+    {name:"Sofia Medical Center",                    contact_id:"SZ7rheGGrcXIPxXzpUn5", sheet_id:"1vZk2StW6KsQJ5cUMPp88I3RUlbuw-mMxH8kPflnlPnA"},
+    {name:"Dentaface",                               contact_id:"yAjO3pElseagi03NntXW", sheet_id:"12OCIY_8L-bVPdjf38nmJE6Pt-ipKILr3NaMPGexqzZs"}
   ],
   // Client portal credentials
   // Username: first 2 letters of name (lowercase letters only) + 3-digit index
@@ -1077,7 +1079,8 @@ const CONFIG = {
     {username:"al026", password:"Lf6jS3nV", clientIndex:25},
     {username:"vo027", password:"Qg4mX9pR", clientIndex:26},
     {username:"sa029", password:"Tn8wK3mQ", clientIndex:27},
-    {username:"so030", password:"Bx5pJ7cV", clientIndex:28}
+    {username:"so030", password:"Bx5pJ7cV", clientIndex:28},
+    {username:"so031", password:"Bx5pJ7BV", clientIndex:29},
   ]
 };
 
@@ -2882,7 +2885,7 @@ function _renderCpAll(wkIdx) {
   if      (strikeCount === 0) sInfo = { emoji:'\uD83D\uDFE2', label:_t('Healthy','\u0628\u062E\u064A\u0631'),                                         text:_t('All metrics on track','\u062C\u0645\u064A\u0639 \u0627\u0644\u0645\u0624\u0634\u0631\u0627\u062A \u062C\u064A\u062F\u0629'),           color:'var(--green)'  };
   else if (strikeCount === 1) sInfo = { emoji:'\uD83D\uDFE1', label:_t('Strike 1 \u2014 Monitoring','\u062A\u062D\u0630\u064A\u0631 1'),                text:_t('One bad week \u2014 being monitored','\u0623\u0633\u0628\u0648\u0639 \u0636\u0639\u064A\u0641'),                        color:'var(--yellow)' };
   else if (strikeCount === 2) sInfo = { emoji:'\uD83D\uDFE0', label:_t('Strike 2 \u2014 Action Required','\u062A\u062D\u0630\u064A\u0631 2'),           text:_t('Two bad weeks \u2014 review recommended','\u0623\u0633\u0628\u0648\u0639\u0627\u0646 \u0636\u0639\u064A\u0641\u0627\u0646'), color:'var(--orange)' };
-  else                        sInfo = { emoji:'\uD83D\uDD34', label:_t('Strike '+strikeCount+' \u2014 Escalated','\u062A\u062D\u0630\u064A\u0631 '+strikeCount), text:_t('Multiple bad weeks \u2014 immediate attention','\u062A\u062F\u062E\u0644 \u0641\u0648\u0631\u064A'), color:'var(--red)' };
+  else                        sInfo = { emoji:'\uD83D\uDFE1', label:_t('Strike '+strikeCount+' \u2014 Under Review','\u062A\u062D\u0630\u064A\u0631 '+strikeCount), text:_t('Multiple bad weeks \u2014 being reviewed','\u062A\u062D\u062A \u0627\u0644\u0645\u0631\u0627\u062C\u0639\u0629'), color:'var(--yellow)' };
   var pulseDot = strikeCount === 0 ? '<span class="pulse-dot"></span>' : '';
   var banner = document.getElementById('client-status-banner');
   if (banner) banner.innerHTML =
@@ -2969,7 +2972,7 @@ function _renderCpAll(wkIdx) {
       function _pctCell(val, bad) {
         if (val === null || isNaN(val)) return '<span class="pill pill-gray">\u2014</span>';
         var pctStr = (val * 100).toFixed(1) + '%';
-        return bad ? '<span class="pill pill-red" style="font-weight:700">' + pctStr + '</span>'
+        return bad ? '<span class="pill pill-amber" style="font-weight:700">' + pctStr + '</span>'
                    : '<span class="pill pill-green" style="font-weight:700">' + pctStr + '</span>';
       }
       var hookPctCell3  = _pctCell(hookPctRaw,  hookBad3);
@@ -2981,16 +2984,16 @@ function _renderCpAll(wkIdx) {
       var hookBar3   = hookFlag  === '' ? '' : '<div class="metric-bar"><div class="metric-fill' + (hookBad3  ? ' fill-bad' : '') + '" style="width:' + hookBarW  + '%"></div></div>';
       var offerBar3  = offerFlag === '' ? '' : '<div class="metric-bar"><div class="metric-fill' + (offerBad3 ? ' fill-bad' : '') + '" style="width:' + offerBarW + '%"></div></div>';
       var cancelBar3 = cancelBarW > 0 ? '<div class="metric-bar"><div class="metric-fill fill-cancel' + (cancelBad3 ? ' fill-bad' : '') + '" style="width:' + cancelBarW.toFixed(1) + '%"></div></div>' : '';
-      var hookCell3  = hookFlag  === '' ? '<span class="pill pill-gray">\u2014</span>' : hookBad3  ? '<span class="pill pill-red">\u274C ' + _t('Flagged','\u0645\u0639\u0644\u0651\u0645') + '</span>' + hookBar3  : '<span class="pill pill-green">\u2705 ' + _t('Good','\u062C\u064A\u062F') + '</span>' + hookBar3;
-      var offerCell3 = offerFlag === '' ? '<span class="pill pill-gray">\u2014</span>' : offerBad3 ? '<span class="pill pill-red">\u274C ' + _t('Flagged','\u0645\u0639\u0644\u0651\u0645') + '</span>' + offerBar3 : '<span class="pill pill-green">\u2705 ' + _t('Good','\u062C\u064A\u062F') + '</span>' + offerBar3;
+      var hookCell3  = hookFlag  === '' ? '<span class="pill pill-gray">\u2014</span>' : hookBad3  ? '<span class="pill pill-amber">\u26A0\uFE0F ' + _t('Under Review','\u0642\u064A\u062F \u0627\u0644\u0645\u0631\u0627\u062C\u0639\u0629') + '</span>' + hookBar3  : '<span class="pill pill-green">\u2705 ' + _t('Good','\u062C\u064A\u062F') + '</span>' + hookBar3;
+      var offerCell3 = offerFlag === '' ? '<span class="pill pill-gray">\u2014</span>' : offerBad3 ? '<span class="pill pill-amber">\u26A0\uFE0F ' + _t('Under Review','\u0642\u064A\u062F \u0627\u0644\u0645\u0631\u0627\u062C\u0639\u0629') + '</span>' + offerBar3 : '<span class="pill pill-green">\u2705 ' + _t('Good','\u062C\u064A\u062F') + '</span>' + offerBar3;
       var cancelCell3;
       if (cancelRate === null || isNaN(cancelRate)) {
         cancelCell3 = '<span class="pill pill-gray">\u2014</span>';
       } else {
         var cpct = (cancelRate * 100).toFixed(1) + '%';
-        cancelCell3 = cancelBad3 ? '<span class="pill pill-red">\u274C ' + cpct + '</span>' + cancelBar3 : '<span class="pill pill-green">\u2705 ' + cpct + '</span>' + cancelBar3;
+        cancelCell3 = cancelBad3 ? '<span class="pill pill-amber">\u26A0\uFE0F ' + cpct + '</span>' + cancelBar3 : '<span class="pill pill-green">\u2705 ' + cpct + '</span>' + cancelBar3;
       }
-      var rowStatus3  = rowBad3 ? '<span class="pill pill-red">\u26A0\uFE0F ' + _t('Bad Week','\u0623\u0633\u0628\u0648\u0639 \u0633\u064A\u0626') + '</span>' : '<span class="pill pill-green">\u2705 ' + _t('Good Week','\u0623\u0633\u0628\u0648\u0639 \u062C\u064A\u062F') + '</span>';
+      var rowStatus3  = rowBad3 ? '<span class="pill pill-amber">\u26A0\uFE0F ' + _t('Under Review','\u0642\u064A\u062F \u0627\u0644\u0645\u0631\u0627\u062C\u0639\u0629') + '</span>' : '<span class="pill pill-green">\u2705 ' + _t('Good Week','\u0623\u0633\u0628\u0648\u0639 \u062C\u064A\u062F') + '</span>';
       var totalRevs3  = (r[30] !== '' && r[30] !== null && r[30] !== undefined) ? r[30] : '\u2014';
       var wp31        = r[31];
       var webPats3    = (wp31 !== '' && wp31 !== null && wp31 !== undefined && wp31 !== 0 && wp31 !== '0') ? wp31 : '\u2014';
