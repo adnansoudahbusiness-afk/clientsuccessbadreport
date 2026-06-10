@@ -98,6 +98,51 @@ function doPost(e) {
 }
 
 function doGet(e) {
+  const action  = e.parameter && e.parameter.action;
+
+  // ── getSchedule: read CAO Schedule tab from AM dates sheet ──
+  if (action === 'getSchedule') {
+    try {
+      const AM_SHEET_ID = '1Lx54-QMM6IONvnVoopNNEjT7oXLmSc_HZTZ4RTG_Qg4';
+      const ss          = SpreadsheetApp.openById(AM_SHEET_ID);
+      const sheet       = ss.getSheetByName('CAO Schedule');
+      if (!sheet) {
+        return ContentService
+          .createTextOutput(JSON.stringify({rows: [], error: 'CAO Schedule tab not found'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const lastRow = sheet.getLastRow();
+      if (lastRow < 2) {
+        return ContentService
+          .createTextOutput(JSON.stringify({rows: []}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      // Header: Client, Strikes, Last Sent, Next Send, Type, Days, Status, Updated
+      const raw  = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+      const rows = raw
+        .filter(function(r) { return r[0] !== ''; })
+        .map(function(r) {
+          return {
+            client_name: r[0],
+            strikes:     r[1] === '' ? 0 : Number(r[1]),
+            last_sent:   r[2],
+            next_send:   r[3],
+            type:        r[4],
+            days:        r[5] === '' ? null : Number(r[5]),
+            status:      r[6],
+            updated:     r[7],
+          };
+        });
+      return ContentService
+        .createTextOutput(JSON.stringify({rows: rows}))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch(err) {
+      return ContentService
+        .createTextOutput(JSON.stringify({rows: [], error: err.toString()}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
   // If sheet_id param provided, return all data rows for the client portal
   const sheetId = e.parameter && e.parameter.sheet_id;
   if (sheetId) {

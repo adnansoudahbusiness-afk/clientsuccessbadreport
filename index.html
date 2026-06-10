@@ -815,6 +815,7 @@
       <button class="nav-tab" onclick="switchTab('tab-status', this)">Client Status</button>
       <button class="nav-tab" onclick="switchTab('tab-insights', this); loadInsights();">&#128202; Insights</button>
       <button class="nav-tab" id="tab-intel-btn" style="display:none" onclick="switchTab('tab-intel', this); loadIntelligence();">&#129504; Intelligence</button>
+      <button class="nav-tab" id="tab-schedule-btn" style="display:none" onclick="switchTab('tab-schedule', this); loadScheduleTab();">&#128197; Schedule</button>
     </div>
     <div class="nav-right">
       <span class="nav-user-badge" id="admin-user-badge">Admin</span>
@@ -915,6 +916,41 @@
       <div style="text-align:center;padding:60px 0;color:var(--muted)">
         <span class="spinner"></span>&nbsp; Click refresh to load Intelligence OS reports
       </div>
+    </div>
+  </div>
+
+  <!-- TAB 6: Schedule (admin only: threeup, hamzeh) -->
+  <div id="tab-schedule" class="tab-content">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <div>
+        <h2 style="margin-bottom:4px">&#128197; Good Report Schedule</h2>
+        <div class="page-subtitle">Upcoming &middot; Due today &middot; Overdue</div>
+      </div>
+      <button class="btn btn-blue" onclick="loadScheduleTab()">&#8635; Refresh</button>
+    </div>
+
+    <!-- Due Today banner -->
+    <div id="schedule-due-today" style="margin-bottom:20px"></div>
+
+    <!-- Full schedule table -->
+    <div class="table-wrap">
+      <table id="schedule-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Client</th>
+            <th>Strikes</th>
+            <th>Last Sent</th>
+            <th>Next Send</th>
+            <th>Type</th>
+            <th>Days</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="schedule-tbody">
+          <tr><td colspan="8" class="loading-row"><span class="spinner"></span> Loading schedule&hellip;</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -1144,6 +1180,12 @@ function showAdminDashboard(username) {
   var intelBtn = document.getElementById('tab-intel-btn');
   if (intelBtn) {
     intelBtn.style.display = (username === 'threeup' || username === 'hamzeh') ? '' : 'none';
+  }
+
+  // Schedule tab: only visible to threeup and hamzeh
+  var schedBtn = document.getElementById('tab-schedule-btn');
+  if (schedBtn) {
+    schedBtn.style.display = (username === 'threeup' || username === 'hamzeh') ? '' : 'none';
   }
 
   if (username === 'marketing') {
@@ -3090,6 +3132,93 @@ function escHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// ═══════════════════════════════════════════
+// SCHEDULE TAB
+// ═══════════════════════════════════════════
+var _scheduleLoaded = false;
+var _scheduleRefreshTimer = null;
+
+async function loadScheduleTab() {
+  const tbody = document.getElementById('schedule-tbody');
+  const dueEl = document.getElementById('schedule-due-today');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="8" class="loading-row"><span class="spinner"></span> Loading schedule&hellip;</td></tr>';
+  if (dueEl) dueEl.innerHTML = '';
+
+  try {
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL + '?action=getSchedule');
+    const data = await res.json();
+
+    if (!data || !Array.isArray(data.rows)) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">No schedule data available.</td></tr>';
+      return;
+    }
+
+    const rows = data.rows;
+    const today = rows.filter(r => r.status === 'DUE TODAY');
+    const overdue = rows.filter(r => r.status === 'OVERDUE');
+
+    // Due Today banner
+    if (dueEl) {
+      if (today.length > 0 || overdue.length > 0) {
+        let bannerHtml = '';
+        if (today.length > 0) {
+          bannerHtml += '<div style="background:#dc3545;color:#fff;border-radius:10px;padding:14px 18px;margin-bottom:10px">'
+            + '<b>&#128197; Due Today (' + today.length + '):</b> '
+            + today.map(r => escHtml(r.client_name)).join(' &nbsp;|&nbsp; ')
+            + '</div>';
+        }
+        if (overdue.length > 0) {
+          bannerHtml += '<div style="background:#7b0000;color:#fff;border-radius:10px;padding:14px 18px;margin-bottom:10px">'
+            + '<b>&#9888; Overdue (' + overdue.length + '):</b> '
+            + overdue.map(r => escHtml(r.client_name) + ' (' + Math.abs(r.days) + 'd)').join(' &nbsp;|&nbsp; ')
+            + '</div>';
+        }
+        dueEl.innerHTML = bannerHtml;
+      }
+    }
+
+    // Full table
+    let html = '';
+    rows.forEach(function(r, i) {
+      var strikeBadge = '';
+      if (r.strikes === 0) strikeBadge = '<span style="background:#28a745;color:#fff;border-radius:4px;padding:2px 7px;font-size:11px">' + r.strikes + '</span>';
+      else if (r.strikes === 1) strikeBadge = '<span style="background:#ffc107;color:#000;border-radius:4px;padding:2px 7px;font-size:11px">' + r.strikes + '</span>';
+      else strikeBadge = '<span style="background:#dc3545;color:#fff;border-radius:4px;padding:2px 7px;font-size:11px">' + r.strikes + '</span>';
+
+      var statusBadge = '';
+      if (r.status === 'DUE TODAY') statusBadge = '<span style="background:#dc3545;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">DUE TODAY</span>';
+      else if (r.status === 'OVERDUE') statusBadge = '<span style="background:#7b0000;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">OVERDUE</span>';
+      else if (r.status === 'UPCOMING') statusBadge = '<span style="background:#28a745;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px">UPCOMING</span>';
+      else statusBadge = '<span style="background:#555;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px">' + escHtml(r.status) + '</span>';
+
+      var daysStr = (r.days === '' || r.days === null || r.days === undefined) ? '—'
+        : (r.days >= 0 ? '+' + r.days + 'd' : r.days + 'd');
+
+      html += '<tr>'
+        + '<td>' + (i + 1) + '</td>'
+        + '<td>' + escHtml(r.client_name) + '</td>'
+        + '<td style="text-align:center">' + strikeBadge + '</td>'
+        + '<td>' + escHtml(r.last_sent || '—') + '</td>'
+        + '<td>' + escHtml(r.next_send || '—') + '</td>'
+        + '<td>' + escHtml(r.type || '—') + '</td>'
+        + '<td style="text-align:center">' + daysStr + '</td>'
+        + '<td>' + statusBadge + '</td>'
+        + '</tr>';
+    });
+    tbody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">No rows.</td></tr>';
+    _scheduleLoaded = true;
+
+    // Auto-refresh every 30 minutes
+    if (_scheduleRefreshTimer) clearTimeout(_scheduleRefreshTimer);
+    _scheduleRefreshTimer = setTimeout(loadScheduleTab, 30 * 60 * 1000);
+
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">Error loading schedule: ' + escHtml(String(e)) + '</td></tr>';
+  }
 }
 
 // ═══════════════════════════════════════════
