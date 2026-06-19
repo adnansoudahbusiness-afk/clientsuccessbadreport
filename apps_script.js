@@ -98,12 +98,12 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  const action  = e.parameter && e.parameter.action;
+  const action = e.parameter && e.parameter.action;
 
   // ── getSchedule: read CAO Schedule tab from AM dates sheet ──
   if (action === 'getSchedule') {
     try {
-      const AM_SHEET_ID = '1Lx54-QMM6IONvnVoopNNEjT7oXLmSc_HZTZ4RTG_Qg4';
+      const AM_SHEET_ID = '12KEc1_CIkAHpfA74y660zsWSGnkbcSoltcSosuk4smA';
       const ss          = SpreadsheetApp.openById(AM_SHEET_ID);
       const sheet       = ss.getSheetByName('CAO Schedule');
       if (!sheet) {
@@ -117,20 +117,21 @@ function doGet(e) {
           .createTextOutput(JSON.stringify({rows: []}))
           .setMimeType(ContentService.MimeType.JSON);
       }
-      // Header: Client, Strikes, Last Sent, Next Send, Type, Days, Status, Updated
-      const raw  = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+      // Header: Client, Doctor, Strikes, Last Sent, Next Send, Type, Days, Due Today, Updated
+      const raw  = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
       const rows = raw
         .filter(function(r) { return r[0] !== ''; })
         .map(function(r) {
           return {
             client_name: r[0],
-            strikes:     r[1] === '' ? 0 : Number(r[1]),
-            last_sent:   r[2],
-            next_send:   r[3],
-            type:        r[4],
-            days:        r[5] === '' ? null : Number(r[5]),
-            status:      r[6],
-            updated:     r[7],
+            doctor_name: r[1],
+            strikes:     r[2] === '' ? 0 : Number(r[2]),
+            last_sent:   r[3],
+            next_send:   r[4],
+            type:        r[5],
+            days:        r[6] === '' ? null : Number(r[6]),
+            due_today:   r[7] === 'TRUE',
+            updated:     r[8],
           };
         });
       return ContentService
@@ -140,6 +141,72 @@ function doGet(e) {
       return ContentService
         .createTextOutput(JSON.stringify({rows: [], error: err.toString()}))
         .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  if (action === 'getHistory') {
+    try {
+      const AM_SHEET_ID = '12KEc1_CIkAHpfA74y660zsWSGnkbcSoltcSosuk4smA';
+      const ss    = SpreadsheetApp.openById(AM_SHEET_ID);
+      const sheet = ss.getSheetByName('CAO History');
+      if (!sheet) return ContentService.createTextOutput(JSON.stringify({rows:[], error:'CAO History tab not found'})).setMimeType(ContentService.MimeType.JSON);
+      const lastRow = sheet.getLastRow();
+      if (lastRow < 2) return ContentService.createTextOutput(JSON.stringify({rows:[]})).setMimeType(ContentService.MimeType.JSON);
+      const raw = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+      const rows = raw.filter(function(r){return r[2]!=='';}).map(function(r){
+        return {scheduled_date:String(r[0]),actual_date:String(r[1]),client:String(r[2]),am_name:String(r[3]),type:String(r[4]),status:String(r[5]),triggered_by:String(r[6]),reason:String(r[7]),updated:String(r[8])};
+      });
+      return ContentService.createTextOutput(JSON.stringify({rows:rows})).setMimeType(ContentService.MimeType.JSON);
+    } catch(err) {
+      return ContentService.createTextOutput(JSON.stringify({rows:[],error:err.toString()})).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  if (action === 'getFutureEvents') {
+    try {
+      const AM_SHEET_ID = '12KEc1_CIkAHpfA74y660zsWSGnkbcSoltcSosuk4smA';
+      const ss    = SpreadsheetApp.openById(AM_SHEET_ID);
+      const sheet = ss.getSheetByName('CAO Future Events');
+      if (!sheet) return ContentService.createTextOutput(JSON.stringify({rows:[],error:'CAO Future Events tab not found'})).setMimeType(ContentService.MimeType.JSON);
+      const lastRow = sheet.getLastRow();
+      if (lastRow < 2) return ContentService.createTextOutput(JSON.stringify({rows:[]})).setMimeType(ContentService.MimeType.JSON);
+      const raw = sheet.getRange(2, 1, lastRow - 1, 6).getValues();
+      const rows = raw.filter(function(r){return r[0]!=='';}).map(function(r){
+        return {client:String(r[0]),doctor_name:String(r[1]),am_name:String(r[2]),event_date:String(r[3]),type:String(r[4]),updated:String(r[5])};
+      });
+      return ContentService.createTextOutput(JSON.stringify({rows:rows})).setMimeType(ContentService.MimeType.JSON);
+    } catch(err) {
+      return ContentService.createTextOutput(JSON.stringify({rows:[],error:err.toString()})).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  if (action === 'getBreachMonitor') {
+    try {
+      const AM_SHEET_ID = '12KEc1_CIkAHpfA74y660zsWSGnkbcSoltcSosuk4smA';
+      const ss    = SpreadsheetApp.openById(AM_SHEET_ID);
+      const sheet = ss.getSheetByName('CAO Breach Monitor');
+      if (!sheet) return ContentService.createTextOutput(JSON.stringify({rows:[],error:'CAO Breach Monitor tab not found'})).setMimeType(ContentService.MimeType.JSON);
+      const lastRow = sheet.getLastRow();
+      if (lastRow < 2) return ContentService.createTextOutput(JSON.stringify({rows:[]})).setMimeType(ContentService.MimeType.JSON);
+      const raw = sheet.getRange(2, 1, lastRow - 1, 15).getValues();
+      const rows = raw.filter(function(r){return r[0]!=='';}).map(function(r){
+        return {
+          client:        String(r[0]),
+          flag:          String(r[1]),
+          streak:        Number(r[2]),
+          max_streak:    Number(r[3]),
+          alert_level:   String(r[4]),
+          w1: String(r[5]), w2: String(r[6]), w3: String(r[7]),
+          w4: String(r[8]), w5: String(r[9]), w6: String(r[10]),
+          coverage_gap:  String(r[11]),
+          updated:       String(r[12]),
+          last_entry:    String(r[13]),
+          missing_weeks: String(r[14]),
+        };
+      });
+      return ContentService.createTextOutput(JSON.stringify({rows:rows})).setMimeType(ContentService.MimeType.JSON);
+    } catch(err) {
+      return ContentService.createTextOutput(JSON.stringify({rows:[],error:err.toString()})).setMimeType(ContentService.MimeType.JSON);
     }
   }
 

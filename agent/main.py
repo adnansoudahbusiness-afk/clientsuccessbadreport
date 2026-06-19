@@ -21,8 +21,8 @@ import pytz
 from dotenv import load_dotenv
 
 # ── Path setup ────────────────────────────────────────────────────────────────
-BASE_DIR  = Path.home() / "ThreeUp-CAO-Agent"
-AGENT_DIR = BASE_DIR / "agent"
+AGENT_DIR = Path(__file__).parent.resolve()
+BASE_DIR  = AGENT_DIR.parent
 LOGS_DIR  = BASE_DIR / "logs"
 
 if str(AGENT_DIR) not in sys.path:
@@ -144,6 +144,20 @@ ALL_WEEKS = [
         "this_end":   (2026,  5, 29, 23, 59, 59),
         "last_start": (2026,  5, 16,  0,  0,  0),
         "last_end":   (2026,  5, 22, 23, 59, 59),
+    },
+    {
+        "label":      "Week 11",
+        "this_start": (2026,  5, 30,  0,  0,  0),
+        "this_end":   (2026,  6,  5, 23, 59, 59),
+        "last_start": (2026,  5, 23,  0,  0,  0),
+        "last_end":   (2026,  5, 29, 23, 59, 59),
+    },
+    {
+        "label":      "Week 12",
+        "this_start": (2026,  6,  6,  0,  0,  0),
+        "this_end":   (2026,  6, 12, 23, 59, 59),
+        "last_start": (2026,  5, 30,  0,  0,  0),
+        "last_end":   (2026,  6,  5, 23, 59, 59),
     },
 ]
 
@@ -334,18 +348,27 @@ def pull_client_data(client: dict,
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
 def _load_clients() -> tuple:
-    """Load, validate and return (all_clients, valid_clients)."""
+    """Load, validate and return (all_clients, valid_clients). Churned clients are excluded from both."""
     clients_path = BASE_DIR / "config" / "clients.json"
     if not clients_path.exists():
         print(f"[X] config/clients.json not found at {clients_path}")
         sys.exit(1)
 
     with open(clients_path, "r", encoding="utf-8") as f:
-        clients = json.load(f)
+        all_raw = json.load(f)
 
-    if not clients:
+    if not all_raw:
         print("[X] clients.json is empty.")
         sys.exit(1)
+
+    clients = []
+    for c in all_raw:
+        if c.get("churned"):
+            name = c.get("name", "<unnamed>")
+            print(f"[!] Skipping '{name}' — churned.")
+            logger.warning(f"[main] Skipping '{name}': churned")
+        else:
+            clients.append(c)
 
     valid_clients = []
     for client in clients:
@@ -581,6 +604,7 @@ def clear_all_sheets():
         print("[X] clients.json is empty.")
         sys.exit(1)
 
+    clients = [c for c in clients if not c.get("churned")]
     print(f"\nClearing {len(clients)} sheet(s)...\n")
     for client in clients:
         name = client.get("name", "<unnamed>")
@@ -616,6 +640,7 @@ def watch_only():
         print("[X] clients.json is empty.")
         sys.exit(1)
 
+    clients = [c for c in clients if not c.get("churned")]
     print(f"Watcher started — monitoring {len(clients)} clients")
     ts = datetime.now(AMMAN_TZ).strftime("%Y-%m-%d %H:%M:%S")
     logger.info(f"[{ts}] [main] --watch-only mode — skipping data pull")
@@ -694,6 +719,10 @@ def audit_mode(fix: bool = False, week_index: int = None):
         name        = client.get("name", "<unnamed>")
         api_key     = client.get("ghl_api_key", "")
         location_id = client.get("location_id", "")
+
+        if client.get("churned"):
+            print(f"  ⏭  {name} — skipped (churned)")
+            continue
 
         # Skip placeholder clients
         if api_key in ("PASTE_YOUR_SUBACCOUNT_API_KEY_HERE", "") or \
@@ -871,10 +900,6 @@ if __name__ == "__main__":
     if "--good-report" in sys.argv:
         _all_clients, _valid_clients = _load_clients()
         good_report_engine.run(_valid_clients, _settings)
-        send_email(
-            "ThreeUp CAO — Good Report Engine Complete ✅",
-            f"Good report engine finished at {datetime.now().strftime('%d/%m/%Y %H:%M')}."
-        )
         sys.exit(0)
 
     if "--good-report-force" in sys.argv:
@@ -885,6 +910,51 @@ if __name__ == "__main__":
             sys.exit(1)
         _all_clients, _valid_clients = _load_clients()
         good_report_engine.run_force(_valid_clients, _settings, _force_name)
+        sys.exit(0)
+
+    if "--schedule" in sys.argv:
+        import json as _json
+        _all_clients, _valid_clients = _load_clients()
+        _schedule = good_report_engine.get_full_schedule(_valid_clients, _settings)
+        print(_json.dumps(_schedule, default=str, ensure_ascii=False, indent=2))
+        good_report_engine.write_schedule_to_sheet(_valid_clients, _settings)
+        good_report_engine.write_history_to_sheet()
+        good_report_engine.write_future_events_to_sheet(_valid_clients)
+        sys.exit(0)
+
+    if "--breach-audit" in sys.argv:
+        import breach_monitor
+        _all_clients, _ = _load_clients()
+        _dry_run = "--dry-run" in sys.argv
+        breach_monitor.run(_all_clients, _settings, dry_run=_dry_run)
+        sys.exit(0)
+
+    if "--reconcile-counters" in sys.argv:
+        import reconcile_counters
+        _all_clients, _ = _load_clients()
+        reconcile_counters.run(_all_clients, _settings)
+        sys.exit(0)
+
+    if "--apply-counters" in sys.argv:
+        import reconcile_counters
+        _all_clients, _ = _load_clients()
+        reconcile_counters.run_apply(_all_clients, _settings)
+        sys.exit(0)
+
+    if "--catchup-notes" in sys.argv:
+        import reconcile_counters
+        _all_clients, _ = _load_clients()
+        _dry = "--apply" not in sys.argv
+        reconcile_counters.run_catchup_notes(_all_clients, _settings, dry_run=_dry)
+        sys.exit(0)
+
+    if "--validate-tabs" in sys.argv:
+        good_report_engine.validate_tabs()
+        sys.exit(0)
+
+    if "--dry-audit" in sys.argv:
+        _all_clients, _valid_clients = _load_clients()
+        good_report_engine.dry_audit(_all_clients)
         sys.exit(0)
 
     if "--clear" in sys.argv:
