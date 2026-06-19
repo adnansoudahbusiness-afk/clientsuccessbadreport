@@ -782,6 +782,50 @@
     @media (max-width: 500px) {
       .insights-stat-grid, .insights-records-grid { grid-template-columns: 1fr; }
     }
+
+    /* ── Agenda tab ─────────────────────────────────────────────── */
+    .pill-purple { background:#f0ecff; color:#7c6db5; }
+    .agenda-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+    .agenda-controls .filter-select { min-width:140px; }
+    .agenda-snapshot { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+    @media(max-width:700px){ .agenda-snapshot { grid-template-columns:repeat(2,1fr); } }
+    @media(max-width:400px){ .agenda-snapshot { grid-template-columns:1fr; } }
+    .agenda-snap-card { background:rgba(255,255,255,.78); backdrop-filter:blur(8px);
+      border:1px solid rgba(168,153,219,.25); border-radius:14px; padding:18px 16px; text-align:center; }
+    .agenda-snap-num  { font-size:2rem; font-weight:700; color:#A899DB; line-height:1; }
+    .agenda-snap-lbl  { font-size:.78rem; color:var(--muted); margin-top:4px; }
+    .agenda-snap-sub  { font-size:.72rem; color:#A899DB; margin-top:3px; }
+    .agenda-day-block { margin-bottom:22px; }
+    .agenda-day-header{ font-weight:700; font-size:.88rem; color:#555; padding:6px 0 4px;
+      border-bottom:2px solid rgba(168,153,219,.25); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+    .agenda-day-today { color:#A899DB; }
+    .agenda-event-row { display:flex; align-items:center; gap:10px; padding:8px 12px;
+      background:rgba(255,255,255,.7); border-radius:10px; border:1px solid rgba(168,153,219,.15);
+      margin-bottom:6px; flex-wrap:wrap; }
+    .agenda-event-client { font-weight:600; font-size:.87rem; flex:1; min-width:120px; }
+    .agenda-event-meta   { font-size:.75rem; color:var(--muted); }
+    .agenda-event-next   { font-size:.73rem; color:#A899DB; margin-left:auto; white-space:nowrap; }
+    .agenda-empty-day    { font-size:.82rem; color:var(--muted); padding:6px 12px; }
+    .agenda-month-jump   { display:flex; gap:8px; flex-wrap:wrap; }
+    .agenda-month-jump button { background:rgba(168,153,219,.15); border:1px solid rgba(168,153,219,.3);
+      border-radius:8px; padding:4px 12px; font-size:.78rem; cursor:pointer; color:#5a4fa0; }
+    .agenda-month-jump button:hover { background:rgba(168,153,219,.3); }
+    .agenda-section-label { font-size:.78rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.06em; color:#A899DB; padding:14px 0 4px; }
+
+    /* ── Breach Monitor tab ──────────────────────────────────────────── */
+    .breach-client-card { background:rgba(255,255,255,.78); backdrop-filter:blur(8px);
+      border:1px solid rgba(168,153,219,.2); border-radius:14px; padding:16px 18px;
+      margin-bottom:14px; }
+    .breach-client-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+    .breach-client-name { font-weight:700; font-size:.95rem; flex:1; }
+    .breach-client-ghl  { font-size:.72rem; color:var(--muted); margin-left:auto; white-space:nowrap; }
+    .breach-flag-row    { display:flex; align-items:center; gap:8px; padding:5px 0;
+      border-top:1px solid rgba(168,153,219,.12); flex-wrap:wrap; }
+    .breach-flag-label  { font-size:.78rem; color:var(--muted); min-width:130px; }
+    .breach-weeks       { font-size:.75rem; color:#666; }
+    .breach-coverage-note { font-size:.74rem; color:#b45309; margin-top:8px;
+      padding:5px 10px; background:#FEF3C7; border-radius:7px; }
   </style>
 </head>
 <body>
@@ -816,6 +860,8 @@
       <button class="nav-tab" onclick="switchTab('tab-insights', this); loadInsights();">&#128202; Insights</button>
       <button class="nav-tab" id="tab-intel-btn" style="display:none" onclick="switchTab('tab-intel', this); loadIntelligence();">&#129504; Intelligence</button>
       <button class="nav-tab" id="tab-schedule-btn" style="display:none" onclick="switchTab('tab-schedule', this); loadScheduleTab();">&#128197; Schedule</button>
+      <button class="nav-tab" id="tab-agenda-btn" style="display:none" onclick="switchTab('tab-agenda', this); loadAgenda();">&#128336; Agenda</button>
+      <button class="nav-tab" id="tab-breach-btn" style="display:none" onclick="switchTab('tab-breach', this); loadBreachMonitor();">&#128680; Breach Monitor</button>
     </div>
     <div class="nav-right">
       <span class="nav-user-badge" id="admin-user-badge">Admin</span>
@@ -951,6 +997,61 @@
           <tr><td colspan="8" class="loading-row"><span class="spinner"></span> Loading schedule&hellip;</td></tr>
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- TAB: Daily Agenda (admin-only) -->
+  <div id="tab-agenda" class="tab-content">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <div>
+        <h2 style="margin-bottom:4px">Daily Agenda</h2>
+        <div class="page-subtitle" id="agenda-subtitle">Send history &amp; upcoming schedule</div>
+      </div>
+      <button class="btn btn-blue" onclick="loadAgenda()">&#8635; Refresh</button>
+    </div>
+
+    <!-- Today snapshot -->
+    <div id="agenda-snapshot" class="agenda-snapshot"></div>
+
+    <!-- Controls -->
+    <div class="agenda-controls">
+      <select class="filter-select" id="agenda-filter-type" onchange="setAgendaFilter()">
+        <option value="all">All types</option>
+        <option value="sustainability">Sustainability</option>
+        <option value="renewal">Renewal</option>
+      </select>
+      <select class="filter-select" id="agenda-filter-status" onchange="setAgendaFilter()">
+        <option value="all">All statuses</option>
+        <option value="sent_on_time">Sent on time</option>
+        <option value="sent_late">Sent late</option>
+        <option value="forced">Forced</option>
+        <option value="missed">Missed</option>
+        <option value="upcoming">Upcoming</option>
+      </select>
+      <div class="agenda-month-jump" id="agenda-month-jump"></div>
+      <button class="btn" style="margin-left:auto" onclick="agendaJumpToToday()">&#8599; Today</button>
+    </div>
+
+    <div id="agenda-body">
+      <div style="text-align:center;padding:60px 0;color:var(--muted)">
+        <span class="spinner"></span>&nbsp; Loading agenda&hellip;
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Breach Monitor (admin-only) -->
+  <div id="tab-breach" class="tab-content">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <div>
+        <h2 style="margin-bottom:4px">Breach Monitor</h2>
+        <div class="page-subtitle">Consecutive streak = primary signal &nbsp;·&nbsp; GHL counter = secondary</div>
+      </div>
+      <button class="btn btn-blue" onclick="loadBreachMonitor()">&#8635; Refresh</button>
+    </div>
+    <div id="breach-body">
+      <div style="text-align:center;padding:60px 0;color:var(--muted)">
+        <span class="spinner"></span>&nbsp; Loading breach data&hellip;
+      </div>
     </div>
   </div>
 
@@ -1186,6 +1287,18 @@ function showAdminDashboard(username) {
   var schedBtn = document.getElementById('tab-schedule-btn');
   if (schedBtn) {
     schedBtn.style.display = (username === 'threeup' || username === 'hamzeh') ? '' : 'none';
+  }
+
+  // Agenda tab: only visible to threeup and hamzeh
+  var agendaBtn = document.getElementById('tab-agenda-btn');
+  if (agendaBtn) {
+    agendaBtn.style.display = (username === 'threeup' || username === 'hamzeh') ? '' : 'none';
+  }
+
+  // Breach Monitor tab: only visible to threeup and hamzeh
+  var breachBtn = document.getElementById('tab-breach-btn');
+  if (breachBtn) {
+    breachBtn.style.display = (username === 'threeup' || username === 'hamzeh') ? '' : 'none';
   }
 
   if (username === 'marketing') {
@@ -3163,22 +3276,30 @@ async function loadScheduleTab() {
 
     // Due Today banner
     if (dueEl) {
-      if (today.length > 0 || overdue.length > 0) {
-        let bannerHtml = '';
-        if (today.length > 0) {
-          bannerHtml += '<div style="background:#dc3545;color:#fff;border-radius:10px;padding:14px 18px;margin-bottom:10px">'
-            + '<b>&#128197; Due Today (' + today.length + '):</b> '
-            + today.map(r => escHtml(r.client_name)).join(' &nbsp;|&nbsp; ')
+      let cardsHtml = '';
+      if (today.length > 0) {
+        cardsHtml += '<div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">&#128197; Due Today (' + today.length + ')</div>';
+        cardsHtml += '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px">';
+        today.forEach(function(r) {
+          cardsHtml += '<div style="background:#dc3545;color:#fff;border-radius:10px;padding:12px 16px;min-width:160px">'
+            + '<div style="font-weight:700;font-size:14px">' + escHtml(r.client_name) + '</div>'
+            + '<div style="font-size:12px;opacity:.85;margin-top:3px">' + escHtml(r.type || '—') + '</div>'
             + '</div>';
-        }
-        if (overdue.length > 0) {
-          bannerHtml += '<div style="background:#7b0000;color:#fff;border-radius:10px;padding:14px 18px;margin-bottom:10px">'
-            + '<b>&#9888; Overdue (' + overdue.length + '):</b> '
-            + overdue.map(r => escHtml(r.client_name) + ' (' + Math.abs(r.days) + 'd)').join(' &nbsp;|&nbsp; ')
-            + '</div>';
-        }
-        dueEl.innerHTML = bannerHtml;
+        });
+        cardsHtml += '</div>';
       }
+      if (overdue.length > 0) {
+        cardsHtml += '<div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">&#9888; Overdue (' + overdue.length + ')</div>';
+        cardsHtml += '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px">';
+        overdue.forEach(function(r) {
+          cardsHtml += '<div style="background:#7b0000;color:#fff;border-radius:10px;padding:12px 16px;min-width:160px">'
+            + '<div style="font-weight:700;font-size:14px">' + escHtml(r.client_name) + '</div>'
+            + '<div style="font-size:12px;opacity:.85;margin-top:3px">' + escHtml(r.type || '—') + ' &middot; ' + Math.abs(r.days) + 'd overdue</div>'
+            + '</div>';
+        });
+        cardsHtml += '</div>';
+      }
+      dueEl.innerHTML = cardsHtml;
     }
 
     // Full table
@@ -3219,6 +3340,413 @@ async function loadScheduleTab() {
   } catch (e) {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">Error loading schedule: ' + escHtml(String(e)) + '</td></tr>';
   }
+}
+
+// ═══════════════════════════════════════════
+// DAILY AGENDA
+// ═══════════════════════════════════════════
+
+var _agendaLoaded      = false;
+var _agendaRefreshTimer= null;
+var _agendaHistory     = [];
+var _agendaFuture      = [];
+var _agendaFilterType  = 'all';
+var _agendaFilterStatus= 'all';
+var _agendaTodayStr    = '';
+
+var AS_URL = 'https://script.google.com/macros/s/AKfycby5kUoSPWjTeBYGE1iRKDvEZ_bJhz99oeNa_EE6YE1NMto1VhCnlYB45YcQm-IaZZGx/exec';
+
+function loadAgenda() {
+  _agendaLoaded = false;
+  var body = document.getElementById('agenda-body');
+  body.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--muted)"><span class="spinner"></span>&nbsp; Loading&hellip;</div>';
+  document.getElementById('agenda-snapshot').innerHTML = '';
+  document.getElementById('agenda-month-jump').innerHTML = '';
+
+  var today = new Date();
+  _agendaTodayStr = today.toISOString().slice(0,10);
+
+  var histDone = false, futDone = false;
+  var histRows = [], futRows = [], histErr = null, futErr = null;
+
+  function tryRender() {
+    if (!histDone || !futDone) return;
+    if (histErr && futErr) {
+      body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Error loading agenda: ' + escHtml(String(histErr)) + '</div>';
+      return;
+    }
+    _agendaHistory = histRows;
+    _agendaFuture  = futRows;
+    renderAgenda();
+  }
+
+  fetch(AS_URL + '?action=getHistory')
+    .then(function(r){ return r.json(); })
+    .then(function(d){ histRows = d.rows || []; histDone = true; tryRender(); })
+    .catch(function(e){ histErr = e; histDone = true; tryRender(); });
+
+  fetch(AS_URL + '?action=getFutureEvents')
+    .then(function(r){ return r.json(); })
+    .then(function(d){ futRows = d.rows || []; futDone = true; tryRender(); })
+    .catch(function(e){ futErr = e; futDone = true; tryRender(); });
+}
+
+function _agendaRefresh() {
+  if (_agendaLoaded) loadAgenda();
+}
+
+function setAgendaFilter() {
+  _agendaFilterType   = document.getElementById('agenda-filter-type').value;
+  _agendaFilterStatus = document.getElementById('agenda-filter-status').value;
+  renderAgenda();
+}
+
+function _agendaDateLabel(dateStr) {
+  if (!dateStr || dateStr === 'None' || dateStr === 'null') return null;
+  var s = dateStr.toString().trim();
+  if (s.length < 10) return null;
+  return s.slice(0,10);
+}
+
+function renderAgenda() {
+  var today = _agendaTodayStr;
+  var body  = document.getElementById('agenda-body');
+
+  // Build nextSendMap: client -> next future event date (strictly > today)
+  var nextSendMap = {};
+  _agendaFuture.forEach(function(r) {
+    var d = _agendaDateLabel(r.event_date);
+    if (!d || d <= today) return;
+    var key = r.client;
+    if (!nextSendMap[key] || d < nextSendMap[key]) nextSendMap[key] = d;
+  });
+
+  // Build seen set to dedup future events against history display dates
+  var histDisplayDates = new Set();
+  _agendaHistory.forEach(function(r) {
+    var displayDate = (r.triggered_by === 'force' && (!r.scheduled_date || r.scheduled_date === 'None' || r.scheduled_date === 'null'))
+      ? _agendaDateLabel(r.actual_date)
+      : _agendaDateLabel(r.scheduled_date);
+    if (displayDate) histDisplayDates.add(r.client + '|' + displayDate);
+  });
+
+  // Collect all events into a flat list with a display_date
+  var allEvents = [];
+
+  // History entries
+  _agendaHistory.forEach(function(r) {
+    var displayDate = (r.triggered_by === 'force' && (!r.scheduled_date || r.scheduled_date === 'None' || r.scheduled_date === 'null'))
+      ? _agendaDateLabel(r.actual_date)
+      : _agendaDateLabel(r.scheduled_date);
+    if (!displayDate) return;
+    allEvents.push({
+      display_date:   displayDate,
+      client:         r.client,
+      am_name:        r.am_name,
+      type:           r.type,
+      status:         r.status,
+      triggered_by:   r.triggered_by,
+      actual_date:    _agendaDateLabel(r.actual_date),
+      scheduled_date: _agendaDateLabel(r.scheduled_date),
+      reason:         r.reason,
+      source:         'history'
+    });
+  });
+
+  // Future events (deduplicate against history)
+  _agendaFuture.forEach(function(r) {
+    var d = _agendaDateLabel(r.event_date);
+    if (!d) return;
+    var dedupKey = r.client + '|' + d;
+    if (histDisplayDates.has(dedupKey)) return;
+    allEvents.push({
+      display_date:   d,
+      client:         r.client,
+      am_name:        r.am_name,
+      type:           r.type,
+      status:         'upcoming',
+      triggered_by:   'scheduled',
+      actual_date:    null,
+      scheduled_date: d,
+      reason:         null,
+      source:         'future'
+    });
+  });
+
+  // Apply filters
+  var filtered = allEvents.filter(function(ev) {
+    if (_agendaFilterType !== 'all' && ev.type !== _agendaFilterType) return false;
+    if (_agendaFilterStatus !== 'all' && ev.status !== _agendaFilterStatus) return false;
+    return true;
+  });
+
+  // Sort: ascending by display_date, then by client
+  filtered.sort(function(a,b) {
+    if (a.display_date < b.display_date) return -1;
+    if (a.display_date > b.display_date) return  1;
+    return a.client.localeCompare(b.client);
+  });
+
+  // Build today snapshot
+  var snapSent=0, snapMissed=0, snapForced=0, snapQueued=0;
+  var snapMissedClients=[], snapForcedClients=[];
+  allEvents.forEach(function(ev) {
+    if (ev.display_date !== today) return;
+    if (ev.status==='sent_on_time'||ev.status==='sent_late') snapSent++;
+    else if (ev.status==='missed') { snapMissed++; snapMissedClients.push(ev.client); }
+    else if (ev.status==='forced') { snapForced++; snapForcedClients.push(ev.client); }
+    else if (ev.status==='queued') snapQueued++;
+  });
+
+  function nextSendSub(clients) {
+    if (!clients.length) return '';
+    var nexts = clients.map(function(c){ return nextSendMap[c]; }).filter(Boolean);
+    if (!nexts.length) return '';
+    nexts.sort();
+    return 'Next: ' + nexts[0];
+  }
+
+  document.getElementById('agenda-snapshot').innerHTML =
+    '<div class="agenda-snap-card"><div class="agenda-snap-num">' + snapSent + '</div><div class="agenda-snap-lbl">Sent Today</div></div>' +
+    '<div class="agenda-snap-card"><div class="agenda-snap-num" style="color:#c0392b">' + snapMissed + '</div><div class="agenda-snap-lbl">Missed Today</div><div class="agenda-snap-sub">' + escHtml(nextSendSub(snapMissedClients)) + '</div></div>' +
+    '<div class="agenda-snap-card"><div class="agenda-snap-num" style="color:#7c6db5">' + snapForced + '</div><div class="agenda-snap-lbl">Forced Today</div><div class="agenda-snap-sub">' + escHtml(nextSendSub(snapForcedClients)) + '</div></div>' +
+    '<div class="agenda-snap-card"><div class="agenda-snap-num" style="color:#888">' + snapQueued + '</div><div class="agenda-snap-lbl">Queued Today</div></div>';
+
+  if (!filtered.length) {
+    body.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--muted)">No events match the current filter.</div>';
+    _buildMonthJump([]);
+    return;
+  }
+
+  // Group by display_date
+  var byDate = {};
+  var dateOrder = [];
+  filtered.forEach(function(ev) {
+    if (!byDate[ev.display_date]) { byDate[ev.display_date] = []; dateOrder.push(ev.display_date); }
+    byDate[ev.display_date].push(ev);
+  });
+
+  // Find where past ends and future begins (for section labels)
+  var html = '';
+  var pastLabelAdded = false, futureLabelAdded = false, todayLabelAdded = false;
+
+  dateOrder.forEach(function(d) {
+    var isToday  = d === today;
+    var isPast   = d < today;
+    var isFuture = d > today;
+
+    if (isPast && !pastLabelAdded) {
+      html += '<div class="agenda-section-label">&#9664; History</div>';
+      pastLabelAdded = true;
+    }
+    if (isToday && !todayLabelAdded) {
+      html += '<div class="agenda-section-label">&#9679; Today</div>';
+      todayLabelAdded = true;
+    }
+    if (isFuture && !futureLabelAdded) {
+      html += '<div class="agenda-section-label">&#9654; Upcoming</div>';
+      futureLabelAdded = true;
+    }
+
+    var dayLabel = _formatAgendaDate(d) + (isToday ? ' — Today' : '');
+    html += '<div class="agenda-day-block" id="agenda-day-' + d + '">';
+    html += '<div class="agenda-day-header' + (isToday ? ' agenda-day-today' : '') + '">';
+    html += escHtml(dayLabel);
+    html += ' <span style="font-weight:400;font-size:.8rem;color:var(--muted)">(' + byDate[d].length + ')</span>';
+    html += '</div>';
+
+    byDate[d].forEach(function(ev) {
+      html += _renderAgendaEvent(ev, nextSendMap);
+    });
+    html += '</div>';
+  });
+
+  body.innerHTML = html;
+  _agendaLoaded = true;
+  _buildMonthJump(dateOrder);
+
+  if (_agendaRefreshTimer) clearTimeout(_agendaRefreshTimer);
+  _agendaRefreshTimer = setTimeout(_agendaRefresh, 30 * 60 * 1000);
+}
+
+function _renderAgendaEvent(ev, nextSendMap) {
+  var statusClass = {
+    sent_on_time: 'pill-green',
+    sent_late:    'pill-amber',
+    forced:       'pill-purple',
+    missed:       'pill-red',
+    queued:       'pill-gray',
+    upcoming:     'pill-blue'
+  }[ev.status] || 'pill-gray';
+
+  var statusLabel = {
+    sent_on_time: 'Sent',
+    sent_late:    'Late',
+    forced:       'Forced',
+    missed:       'Missed',
+    queued:       'Queued',
+    upcoming:     'Upcoming'
+  }[ev.status] || ev.status;
+
+  var typeLabel = ev.type === 'renewal' ? '&#128260; Renewal' : '&#128200; Sustainability';
+
+  var meta = '';
+  if (ev.status === 'sent_late' && ev.actual_date) {
+    meta = 'Sent ' + ev.actual_date;
+  } else if (ev.status === 'forced' && ev.actual_date) {
+    meta = 'Sent ' + ev.actual_date;
+  } else if (ev.status === 'missed' && ev.reason) {
+    meta = ev.reason.replace(/_/g,' ');
+  }
+
+  var nextSend = '';
+  if (ev.status === 'missed' || ev.status === 'forced' || ev.status === 'sent_late') {
+    var ns = nextSendMap[ev.client];
+    if (ns) nextSend = 'Next: ' + ns;
+  }
+
+  return '<div class="agenda-event-row">' +
+    '<div class="agenda-event-client">' + escHtml(ev.client) + '</div>' +
+    '<span class="pill ' + statusClass + '">' + statusLabel + '</span>' +
+    '<span class="pill pill-gray" style="font-size:.72rem">' + typeLabel + '</span>' +
+    (meta    ? '<span class="agenda-event-meta">' + escHtml(meta) + '</span>' : '') +
+    (nextSend? '<span class="agenda-event-next">' + escHtml(nextSend) + '</span>' : '') +
+    '</div>';
+}
+
+function _formatAgendaDate(d) {
+  if (!d || d.length < 10) return d;
+  var dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+}
+
+function _buildMonthJump(dateOrder) {
+  var seen = {}, months = [];
+  dateOrder.forEach(function(d) {
+    var m = d.slice(0,7);
+    if (!seen[m]) { seen[m] = true; months.push(m); }
+  });
+  var wrap = document.getElementById('agenda-month-jump');
+  if (!wrap) return;
+  wrap.innerHTML = months.map(function(m) {
+    var label = new Date(m + '-01T00:00:00').toLocaleDateString('en-GB',{month:'short', year:'numeric'});
+    return '<button onclick="agendaJumpToMonth(\'' + m + '\')">' + escHtml(label) + '</button>';
+  }).join('');
+}
+
+function agendaJumpToMonth(m) {
+  var el = document.querySelector('[id^="agenda-day-' + m + '"]');
+  if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function agendaJumpToToday() {
+  var el = document.getElementById('agenda-day-' + _agendaTodayStr);
+  if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ═══════════════════════════════════════════
+// BREACH MONITOR
+// ═══════════════════════════════════════════
+
+function loadBreachMonitor() {
+  var body = document.getElementById('breach-body');
+  body.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--muted)"><span class="spinner"></span>&nbsp; Loading&hellip;</div>';
+  fetch(AS_URL + '?action=getBreachMonitor')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.error) {
+        body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Error: ' + escHtml(String(d.error)) + '</div>';
+        return;
+      }
+      renderBreachMonitor(d.rows || []);
+    })
+    .catch(function(e) {
+      body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Error: ' + escHtml(String(e)) + '</div>';
+    });
+}
+
+function renderBreachMonitor(rows) {
+  var body = document.getElementById('breach-body');
+  if (!rows.length) {
+    body.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--muted)">No breach data — run --breach-audit first.</div>';
+    return;
+  }
+
+  // Group by client (preserving flag order within each client)
+  var clientOrder = [];
+  var byClient = {};
+  rows.forEach(function(r) {
+    if (!byClient[r.client]) { byClient[r.client] = []; clientOrder.push(r.client); }
+    byClient[r.client].push(r);
+  });
+  // Sort clients by worst streak descending, then name
+  clientOrder.sort(function(a, b) {
+    var maxA = Math.max.apply(null, byClient[a].map(function(r){ return r.streak || 0; }));
+    var maxB = Math.max.apply(null, byClient[b].map(function(r){ return r.streak || 0; }));
+    return maxB - maxA || a.localeCompare(b);
+  });
+
+  var FLAG_ORDER = ['Hook (TL/NP)', 'Offer (Rev/TL)', 'Cancellation', 'Loyalty Drop'];
+
+  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px">';
+
+  clientOrder.forEach(function(name) {
+    var clientRows = byClient[name].filter(function(r) { return r.flag !== 'ERROR'; });
+    if (!clientRows.length) return;
+
+    // Max streak across all flags → card-level alert
+    var maxStreak = Math.max.apply(null, clientRows.map(function(r) { return r.streak || 0; }));
+    var cardPill = '', pillClass = '', alertLabel = '';
+    if (maxStreak >= 4)      { pillClass = 'pill-red';    alertLabel = 'CRITICAL ' + maxStreak + 'wk'; }
+    else if (maxStreak >= 3) { pillClass = 'pill-amber';  alertLabel = 'WARNING '  + maxStreak + 'wk'; }
+    else if (maxStreak >= 1) { pillClass = 'pill-purple'; alertLabel = 'WATCH '    + maxStreak + 'wk'; }
+    if (pillClass) cardPill = '<span class="pill ' + pillClass + '">' + escHtml(alertLabel) + '</span>';
+
+    // GHL counter from first row's updated field isn't available; use last_entry + missing_weeks
+    var le = clientRows[0] && clientRows[0].last_entry && clientRows[0].last_entry !== 'undefined'
+             ? clientRows[0].last_entry : '';
+    var ghlInfo = le ? '<span class="breach-client-ghl">Last entry: ' + escHtml(le) + '</span>' : '';
+
+    html += '<div class="breach-client-card">';
+    html += '<div class="breach-client-header"><span class="breach-client-name">' + escHtml(name) + '</span>' + cardPill + ghlInfo + '</div>';
+
+    // Sort flags in canonical order
+    var orderedFlags = FLAG_ORDER.map(function(fl) {
+      return clientRows.find(function(r) { return r.flag === fl; });
+    }).filter(Boolean);
+
+    orderedFlags.forEach(function(r) {
+      if ((r.streak || 0) === 0 && (r.max_streak || 0) === 0) return; // skip clean flags
+
+      var weeks = [r.w1, r.w2, r.w3, r.w4, r.w5, r.w6]
+        .filter(function(w) { return w && w !== '' && w !== 'undefined'; });
+      var streakPill = '';
+      if (r.streak >= 4)      streakPill = '<span class="pill pill-red">'    + r.streak + 'wk</span>';
+      else if (r.streak >= 3) streakPill = '<span class="pill pill-amber">'  + r.streak + 'wk</span>';
+      else if (r.streak >= 1) streakPill = '<span class="pill pill-purple">' + r.streak + 'wk</span>';
+
+      html += '<div class="breach-flag-row">';
+      html += '<span class="breach-flag-label">' + escHtml(r.flag) + '</span>';
+      html += streakPill;
+      html += '<span class="breach-weeks">' + weeks.map(escHtml).join(' · ') + '</span>';
+      html += '</div>';
+    });
+
+    // Coverage / missing weeks note
+    var covGap = clientRows[0] && clientRows[0].coverage_gap;
+    if (covGap && covGap !== '' && covGap !== 'undefined') {
+      html += '<div class="breach-coverage-note">&#9888; ' + escHtml(covGap) + '</div>';
+    }
+    var missingWks = clientRows[0] && clientRows[0].missing_weeks;
+    if (missingWks && missingWks !== '' && missingWks !== 'undefined') {
+      html += '<div class="breach-coverage-note">&#9888; Missing weeks: ' + escHtml(missingWks) + '</div>';
+    }
+
+    html += '</div>';
+  });
+
+  html += '</div>';
+  body.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════
