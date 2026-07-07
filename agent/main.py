@@ -173,6 +173,13 @@ ALL_WEEKS = [
         "last_start": (2026,  6, 13,  0,  0,  0),
         "last_end":   (2026,  6, 19, 23, 59, 59),
     },
+    {
+        "label":      "Week 15",
+        "this_start": (2026,  6, 27,  0,  0,  0),
+        "this_end":   (2026,  7,  3, 23, 59, 59),
+        "last_start": (2026,  6, 20,  0,  0,  0),
+        "last_end":   (2026,  6, 26, 23, 59, 59),
+    },
 ]
 
 
@@ -909,6 +916,12 @@ if __name__ == "__main__":
         import eid_message
         _all_clients, _valid_clients = _load_clients()
         eid_message.run_payment_reminder(_valid_clients, _settings)
+        sys.exit(0)
+
+    if "--june-blast" in sys.argv:
+        import june_blast
+        _all_clients, _valid_clients = _load_clients()
+        june_blast.run_june_blast(_valid_clients, _settings)
         sys.exit(0)
 
     if "--good-report" in sys.argv:
