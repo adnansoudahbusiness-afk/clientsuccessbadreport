@@ -1182,7 +1182,14 @@ const CONFIG = {
     {name:"Vogue Dental Clinic",                     contact_id:"lqAy8b7HVZEiHU2Wms39", sheet_id:"1q9QuiJHb5TSFq406qyUoKaWivctKkkEew3WgeSd0egk"},
     {name:"Salamati Medical Center",                 contact_id:"NGfNgdVRUng1Nv7emFOz", sheet_id:"1q1fvV1CM_cVAORtd93MRb6jlQ9VFTsl-deYIYyBOPNw"},
     {name:"Sofia Medical Center",                    contact_id:"SZ7rheGGrcXIPxXzpUn5", sheet_id:"1vZk2StW6KsQJ5cUMPp88I3RUlbuw-mMxH8kPflnlPnA"},
-    {name:"Dentaface",                               contact_id:"yAjO3pElseagi03NntXW", sheet_id:"12OCIY_8L-bVPdjf38nmJE6Pt-ipKILr3NaMPGexqzZs"}
+    {name:"Dentaface",                               contact_id:"yAjO3pElseagi03NntXW", sheet_id:"12OCIY_8L-bVPdjf38nmJE6Pt-ipKILr3NaMPGexqzZs"},
+    {name:"Monalisa Medical Center",                 contact_id:"k9sYplIzeS7LdPeFW8MT", sheet_id:"1se1YFn2sET4BybpjXe-COVUoSelWVQ3CzCQhvYuo-cg"},
+    {name:"Layan Dental Center",                     contact_id:"Zht3Nfj413y01HmZdHnR", sheet_id:"15dK1lh8FDnkfR9qJsv5Key2tXCZ31ETYKTxtnhtnN1I"},
+    {name:"Luxury Wellness",                         contact_id:"bu6j2kXbybHwHupIyuOa", sheet_id:"12QZ4hDIMdFPvZXSsXPc8hRlU9Vf4SgWFQYzQ30Kwu6w"},
+    {name:"Dr Mohammad Al-Khalili",                  contact_id:"Ckw6BxmlYtEXDCnudDx3", sheet_id:"1MtiP_OfCz7q1bQzDRwseu1KCQKl_anLaYu27DLuqlF0"},
+    {name:"Dr Yahya Alaydeh",                        contact_id:"rHDseGUrandm4mAHrqzo", sheet_id:"1HsZ4jVTpHyleStWIPs7jSIv_vOtMuKDTNLiiiaM2ABQ"},
+    {name:"Dr Amjad Daas",                           contact_id:"8knnVxuxkpqatQDvkgFU", sheet_id:"1-h8v4S2vqlWJKU5O6a2ZPM6QkPx2SIk6ZluImexnfPs"},
+    {name:"Dr Samer Ghunaim",                        contact_id:"6EYkewXT63S7OIsXZ7y8", sheet_id:"1Y4Z8gKGK9Ud7clO6lMo1qIImtfQ0kbsAOiejJ1nqtI8"}
   ],
   // Client portal credentials
   // Username: first 2 letters of name (lowercase letters only) + 3-digit index
@@ -1218,6 +1225,13 @@ const CONFIG = {
     {username:"sa029", password:"Tn8wK3mQ", clientIndex:27},
     {username:"so030", password:"Bx5pJ7cV", clientIndex:28},
     {username:"so031", password:"Bx5pJ7BV", clientIndex:29},
+    {username:"mo032", password:"Qp7nW2xK", clientIndex:30},
+    {username:"la033", password:"Hv4rT8mJ", clientIndex:31},
+    {username:"lu034", password:"Zb6nF3wP", clientIndex:32},
+    {username:"dr035", password:"Yk9pS5xQ", clientIndex:33},
+    {username:"dr036", password:"Wm2tG7rN", clientIndex:34},
+    {username:"dr037", password:"Cn5vH4bE", clientIndex:35},
+    {username:"dr038", password:"Xs8mK2jR", clientIndex:36},
   ]
 };
 
@@ -1477,37 +1491,36 @@ function buildTab1Weeks() {
     { label: "Week 12 \u2014 Sat 6/6 \u2013 Fri 12/6",  week: "Sat 6/6 \u2013 Fri 12/6"  },
     { label: "Week 13 \u2014 Sat 13/6 \u2013 Fri 19/6", week: "Sat 13/6 \u2013 Fri 19/6" },
     { label: "Week 14 \u2014 Sat 20/6 \u2013 Fri 26/6", week: "Sat 20/6 \u2013 Fri 26/6" },
-    { label: "Week 15 \u2014 Sat 27/6 \u2013 Fri 3/7",  week: "Sat 27/6 \u2013 Fri 3/7",  isDefault: true },
   ];
 
-  // Current Amman date for week calculations
-  const nowAmman = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Amman' }));
-  const day = nowAmman.getDay(); // Sun=0, Mon=1, ..., Fri=5, Sat=6
-  const daysSinceSat = (day + 1) % 7; // Sat\u21920, Fri\u21926
-  const baseSat = new Date(nowAmman);
-  baseSat.setDate(nowAmman.getDate() - daysSinceSat);
-  baseSat.setHours(0, 0, 0, 0);
+  // Weeks 15+ auto-generated from anchor (Sat 27 Jun 2026 = Week 15).
+  // Loop runs through current week + 4, so this never needs manual updates again.
+  var nowAmman = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Amman' }));
+  var day = nowAmman.getDay(); // Sun=0, Mon=1, ..., Fri=5, Sat=6
+  var daysSinceSat = (day + 1) % 7;
+  var currentSat = new Date(nowAmman);
+  currentSat.setDate(nowAmman.getDate() - daysSinceSat);
+  currentSat.setHours(0, 0, 0, 0);
+  var cutoff = new Date(currentSat);
+  cutoff.setDate(currentSat.getDate() + 4 * 7);
 
-  // Pre-compute current week string (Sat\u2013Fri) for default selection
-  const curFri = new Date(baseSat);
-  curFri.setDate(baseSat.getDate() + 6);
-  const curWeekStr = 'Sat ' + fmtDate(baseSat, true) + ' \u2013 Fri ' + fmtDate(curFri, true);
-
-  // Add current week + up to 3 future weeks (4 total), skipping duplicates
-  const seen = new Set(hardcoded.map(function(h) { return h.week; }));
-  for (var i = 0; i < 4; i++) {
-    var wSat = new Date(baseSat);
-    wSat.setDate(baseSat.getDate() + i * 7);
-    var wFri = new Date(wSat);
-    wFri.setDate(wSat.getDate() + 6);
-    var weekStr = 'Sat ' + fmtDate(wSat, true) + ' \u2013 Fri ' + fmtDate(wFri, true);
-    if (!seen.has(weekStr)) {
-      seen.add(weekStr);
-      hardcoded.push({ label: weekStr, week: weekStr });
-    }
+  var sat = new Date(2026, 5, 27); // June 27 2026 \u2014 Week 15 anchor (month 0-indexed)
+  sat.setHours(0, 0, 0, 0);
+  var weekNum = 15;
+  while (sat <= cutoff) {
+    var fri = new Date(sat);
+    fri.setDate(sat.getDate() + 6);
+    var weekStr = 'Sat ' + fmtDate(sat, true) + ' \u2013 Fri ' + fmtDate(fri, true);
+    hardcoded.push({ label: 'Week ' + weekNum + ' \u2014 ' + weekStr, week: weekStr });
+    sat = new Date(sat);
+    sat.setDate(sat.getDate() + 7);
+    weekNum++;
   }
 
-  // Default to the current week entry (or last if not found)
+  // Default: current week
+  var curFri = new Date(currentSat);
+  curFri.setDate(currentSat.getDate() + 6);
+  var curWeekStr = 'Sat ' + fmtDate(currentSat, true) + ' \u2013 Fri ' + fmtDate(curFri, true);
   var defEntry = hardcoded.find(function(h) { return h.week === curWeekStr; });
   if (defEntry) {
     defEntry.isDefault = true;
