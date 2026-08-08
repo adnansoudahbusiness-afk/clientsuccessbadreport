@@ -826,6 +826,76 @@
     .breach-weeks       { font-size:.75rem; color:#666; }
     .breach-coverage-note { font-size:.74rem; color:#b45309; margin-top:8px;
       padding:5px 10px; background:#FEF3C7; border-radius:7px; }
+    .breach-sc-btn {
+      margin-top: 12px;
+      background: rgba(124,109,181,.1);
+      border: 1px solid rgba(124,109,181,.28);
+      color: #5a4fa0;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s, border-color .15s;
+    }
+    .breach-sc-btn:hover { background: rgba(124,109,181,.2); border-color: rgba(124,109,181,.45); }
+
+    /* ── Strategy Change Modal ──────────────────────────────────── */
+    .sc-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .sc-overlay.open { display: flex; }
+    .sc-modal {
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 36px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.18);
+      animation: insightsFadeIn .18s ease both;
+    }
+    .sc-modal-title  { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .sc-modal-client { font-size: 14px; color: var(--muted); margin-bottom: 24px; font-weight: 500; }
+    .sc-field { margin-bottom: 18px; }
+    .sc-field label {
+      display: block; font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .07em; margin-bottom: 7px;
+    }
+    .sc-field input[type="date"],
+    .sc-field textarea {
+      width: 100%; background: var(--bg3); border: 1.5px solid var(--border);
+      border-radius: 10px; color: var(--text); font-family: inherit;
+      font-size: 14px; padding: 11px 14px; outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .sc-field textarea { resize: vertical; min-height: 72px; }
+    .sc-field input[type="date"]:focus,
+    .sc-field textarea:focus {
+      border-color: #7c6db5;
+      box-shadow: 0 0 0 3px rgba(124,109,181,.12);
+      background: #fff;
+    }
+    .sc-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+    .sc-msg { margin-top: 16px; font-size: 13px; padding: 10px 14px; border-radius: 9px; display: none; line-height: 1.5; }
+    .sc-msg.ok  { display: block; background: var(--green-lt); color: var(--green); border: 1px solid #bbf7d0; }
+    .sc-msg.err { display: block; background: var(--red-lt);   color: var(--red);   border: 1px solid #fecaca; }
+    .btn-purple {
+      background: linear-gradient(135deg, #7c6db5, #A899DB);
+      color: #fff; border: none;
+      box-shadow: 0 2px 8px rgba(124,109,181,.3);
+    }
+    .btn-purple:hover:not(:disabled) { box-shadow: 0 4px 14px rgba(124,109,181,.4); }
   </style>
 </head>
 <body>
@@ -1069,6 +1139,27 @@
         <span class="spinner"></span>&nbsp; Click refresh to load insights
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ═══ STRATEGY CHANGE MODAL ═══ -->
+<div id="sc-overlay" class="sc-overlay" onclick="if(event.target===this)closeStrategyModal()">
+  <div class="sc-modal">
+    <div class="sc-modal-title">&#9881; Record Strategy Change</div>
+    <div class="sc-modal-client" id="sc-modal-client-name"></div>
+    <div class="sc-field">
+      <label>Strategy Changed On</label>
+      <input type="date" id="sc-date-input" />
+    </div>
+    <div class="sc-field">
+      <label>Note (optional)</label>
+      <textarea id="sc-note-input" placeholder="e.g. switched to new offer type, updated hook campaign&#8230;"></textarea>
+    </div>
+    <div class="sc-actions">
+      <button class="btn btn-ghost" onclick="closeStrategyModal()">Cancel</button>
+      <button class="btn btn-purple" id="sc-submit-btn" onclick="submitStrategyChange()">Record Strategy Change &rarr;</button>
+    </div>
+    <div id="sc-msg" class="sc-msg"></div>
   </div>
 </div>
 
@@ -3758,11 +3849,98 @@ function renderBreachMonitor(rows) {
       html += '<div class="breach-coverage-note">&#9888; Missing weeks: ' + escHtml(missingWks) + '</div>';
     }
 
+    // Change Strategy button — threeup / hamzeh only
+    if (_activeAdminUser === 'threeup' || _activeAdminUser === 'hamzeh') {
+      html += '<div style="border-top:1px solid rgba(168,153,219,.15);margin-top:12px;padding-top:10px">';
+      html += '<button class="breach-sc-btn" onclick="openStrategyModal(' + JSON.stringify(name) + ')">&#9881; Change Strategy</button>';
+      html += '</div>';
+    }
+
     html += '</div>';
   });
 
   html += '</div>';
   body.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════
+// STRATEGY CHANGE
+// ═══════════════════════════════════════════
+var _scCurrentClient = '';
+
+function openStrategyModal(clientName) {
+  _scCurrentClient = clientName;
+  document.getElementById('sc-modal-client-name').textContent = clientName;
+  // Default to today in local date (YYYY-MM-DD for input[type=date])
+  var today = new Date();
+  var dd  = String(today.getDate()).padStart(2, '0');
+  var mm  = String(today.getMonth() + 1).padStart(2, '0');
+  var yyyy = today.getFullYear();
+  document.getElementById('sc-date-input').value = yyyy + '-' + mm + '-' + dd;
+  document.getElementById('sc-note-input').value = '';
+  var msg = document.getElementById('sc-msg');
+  msg.className = 'sc-msg';
+  msg.textContent = '';
+  var btn = document.getElementById('sc-submit-btn');
+  btn.disabled = false;
+  btn.textContent = 'Record Strategy Change →';
+  document.getElementById('sc-overlay').classList.add('open');
+}
+
+function closeStrategyModal() {
+  document.getElementById('sc-overlay').classList.remove('open');
+  _scCurrentClient = '';
+}
+
+function submitStrategyChange() {
+  var clientName = _scCurrentClient;
+  var rawDate    = document.getElementById('sc-date-input').value;   // YYYY-MM-DD
+  var note       = document.getElementById('sc-note-input').value.trim();
+  var submitBtn  = document.getElementById('sc-submit-btn');
+  var msg        = document.getElementById('sc-msg');
+
+  if (!rawDate) {
+    msg.className = 'sc-msg err';
+    msg.textContent = 'Please select a date.';
+    return;
+  }
+
+  // Convert YYYY-MM-DD → DD/MM/YYYY (format master expects)
+  var parts    = rawDate.split('-');
+  var ddmmyyyy = parts[2] + '/' + parts[1] + '/' + parts[0];
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Recording…';
+  msg.className = 'sc-msg';
+  msg.textContent = '';
+
+  var payload = { action: 'setStrategyChange', am_name: clientName, change_date: ddmmyyyy };
+  if (note) payload.note = note;
+
+  fetch(AS_URL, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Record Strategy Change →';
+    if (d.success) {
+      msg.className = 'sc-msg ok';
+      msg.textContent = 'Strategy change recorded for “' + clientName + '” on ' + ddmmyyyy +
+        ' — breach streak will restart on the next watcher run.';
+    } else {
+      msg.className = 'sc-msg err';
+      msg.textContent = 'Error: ' + escHtml(d.error || 'Unknown error from server.');
+    }
+  })
+  .catch(function(e) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Record Strategy Change →';
+    msg.className = 'sc-msg err';
+    msg.textContent = 'Network error: ' + String(e);
+  });
 }
 
 // ═══════════════════════════════════════════

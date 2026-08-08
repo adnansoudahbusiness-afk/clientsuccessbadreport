@@ -152,7 +152,7 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  const action = e.parameter && e.parameter.action;
+  const action  = e.parameter && e.parameter.action;
 
   // ── getSchedule: read CAO Schedule tab from AM dates sheet ──
   if (action === 'getSchedule') {
