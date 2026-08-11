@@ -813,21 +813,57 @@
     .agenda-section-label { font-size:.78rem; font-weight:700; text-transform:uppercase;
       letter-spacing:.06em; color:#A899DB; padding:14px 0 4px; }
 
-    /* ── Breach Monitor tab ──────────────────────────────────────────── */
-    .breach-client-card { background:rgba(255,255,255,.78); backdrop-filter:blur(8px);
-      border:1px solid rgba(168,153,219,.2); border-radius:14px; padding:16px 18px;
-      margin-bottom:14px; }
-    .breach-client-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
-    .breach-client-name { font-weight:700; font-size:.95rem; flex:1; }
-    .breach-client-ghl  { font-size:.72rem; color:var(--muted); margin-left:auto; white-space:nowrap; }
-    .breach-flag-row    { display:flex; align-items:center; gap:8px; padding:5px 0;
-      border-top:1px solid rgba(168,153,219,.12); flex-wrap:wrap; }
-    .breach-flag-label  { font-size:.78rem; color:var(--muted); min-width:130px; }
-    .breach-weeks       { font-size:.75rem; color:#666; }
+    /* ── Breach Monitor / Triage View ───────────────────────────────── */
+    .triage-banner { display:flex; align-items:center; flex-wrap:wrap; gap:8px;
+      padding:12px 18px; background:#fff; border:1px solid var(--border);
+      border-radius:12px; margin-bottom:20px; font-size:.83rem; }
+    .triage-banner-label { font-size:.68rem; font-weight:700; letter-spacing:.08em;
+      color:var(--muted); text-transform:uppercase; margin-right:4px; }
+    .triage-badge { font-size:.73rem; font-weight:700; padding:3px 10px; border-radius:20px; }
+    .triage-badge-red    { background:#FEE2E2; color:#991B1B; }
+    .triage-badge-orange { background:#FEF3C7; color:#92400E; }
+    .triage-badge-amber  { background:#FFFBEB; color:#B45309; }
+    .triage-badge-purple { background:#EDE9FE; color:#5B21B6; }
+
+    .triage-tier-header { display:flex; align-items:center; justify-content:space-between;
+      font-size:.7rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+      padding:8px 14px; border-radius:8px; margin:16px 0 6px; cursor:pointer;
+      user-select:none; }
+    .tier-chevron { font-size:.65rem; }
+    .triage-tier-double-critical { background:#FEE2E2; color:#991B1B; }
+    .triage-tier-renewal-risk    { background:#FEF3C7; color:#92400E; }
+    .triage-tier-critical        { background:#FEF2F2; color:#B91C1C; }
+    .triage-tier-watch           { background:#F5F3FF; color:#6D28D9; }
+    .triage-tier-healthy         { background:var(--bg3); color:var(--muted); }
+
+    .triage-card { background:rgba(255,255,255,.88); backdrop-filter:blur(8px);
+      border:1px solid rgba(168,153,219,.2); border-radius:12px; padding:13px 16px;
+      margin-bottom:8px; cursor:pointer; transition:border-color .15s,box-shadow .15s; }
+    .triage-card:hover { border-color:rgba(168,153,219,.45); box-shadow:var(--shadow); }
+    .triage-card-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .triage-name { font-weight:700; font-size:.88rem; flex:0 0 auto; max-width:260px; }
+    .triage-flags { display:flex; flex-wrap:wrap; gap:4px; flex:1; }
+    .triage-renewal-badge { font-size:.7rem; font-weight:600; padding:3px 9px;
+      border-radius:20px; white-space:nowrap; flex:0 0 auto; }
+    .triage-chevron { color:var(--muted); font-size:.62rem; flex:0 0 auto; }
+    .triage-hint-inline { font-size:.76rem; padding-top:5px; margin-top:3px; }
+    .triage-hint-box { font-size:.8rem; padding:8px 12px; border-radius:7px; margin-bottom:7px; line-height:1.4; }
+
+    .triage-flag-table { margin-top:12px; overflow-x:auto; }
+    .triage-flag-table table { width:100%; border-collapse:collapse; font-size:.74rem; }
+    .triage-flag-table th { text-align:left; padding:5px 8px; font-size:.66rem;
+      font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--muted);
+      border-bottom:1px solid var(--border); white-space:nowrap; }
+    .triage-flag-table td { padding:5px 8px; border-bottom:1px solid rgba(226,232,240,.5);
+      white-space:nowrap; color:var(--text); }
+    .flag-name { font-size:.75rem; min-width:140px; }
+    .flag-row-ok td { color:var(--muted); }
+    .np-synthetic-row td { background:#EFF6FF; font-size:.73rem;
+      border-bottom:1px solid #BFDBFE; }
+
     .breach-coverage-note { font-size:.74rem; color:#b45309; margin-top:8px;
       padding:5px 10px; background:#FEF3C7; border-radius:7px; }
     .breach-sc-btn {
-      margin-top: 12px;
       background: rgba(124,109,181,.1);
       border: 1px solid rgba(124,109,181,.28);
       color: #5a4fa0;
@@ -839,7 +875,7 @@
       font-family: inherit;
       transition: background .15s, border-color .15s;
     }
-    .breach-sc-btn:hover { background: rgba(124,109,181,.2); border-color: rgba(124,109,181,.45); }
+    .breach-sc-btn:hover { background:rgba(124,109,181,.2); border-color:rgba(124,109,181,.45); }
 
     /* ── Strategy Change Modal ──────────────────────────────────── */
     .sc-overlay {
@@ -3733,111 +3769,392 @@ function agendaJumpToToday() {
 // BREACH MONITOR
 // ═══════════════════════════════════════════
 
+function parseFlexDate(s) {
+  if (!s || s === 'undefined') return null;
+  s = String(s).trim();
+  var m;
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+var _expandedClients = {};
+
 function loadBreachMonitor() {
   var body = document.getElementById('breach-body');
   body.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--muted)"><span class="spinner"></span>&nbsp; Loading&hellip;</div>';
-  fetch(AS_URL + '?action=getBreachMonitor')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.error) {
-        body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Error: ' + escHtml(String(d.error)) + '</div>';
-        return;
-      }
-      renderBreachMonitor(d.rows || []);
-    })
-    .catch(function(e) {
-      body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Error: ' + escHtml(String(e)) + '</div>';
-    });
+  Promise.all([
+    fetch(AS_URL + '?action=getBreachMonitor').then(function(r) { return r.json(); }),
+    fetch(AS_URL + '?action=getFutureEvents').then(function(r) { return r.json(); }).catch(function() { return {rows:[]}; }),
+  ]).then(function(results) {
+    var breachData = results[0];
+    var futureData = results[1];
+    if (breachData.error) {
+      body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Error: ' + escHtml(String(breachData.error)) + '</div>';
+      return;
+    }
+    var clients = computeClientTriage(breachData.rows || [], futureData.rows || []);
+    renderTriageView(clients);
+  }).catch(function(e) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Error: ' + escHtml(String(e)) + '</div>';
+  });
 }
 
-function renderBreachMonitor(rows) {
+function computeClientTriage(breachRows, futureRows) {
+  // Group breach rows by client
+  var byClient = {}, clientOrder = [];
+  breachRows.forEach(function(r) {
+    if (!byClient[r.client]) { byClient[r.client] = []; clientOrder.push(r.client); }
+    byClient[r.client].push(r);
+  });
+
+  // Renewal map: earliest future renewal/payment per client from getFutureEvents
+  var today0 = new Date(); today0.setHours(0,0,0,0);
+  var renewalMap = {};
+  (futureRows || []).forEach(function(ev) {
+    var t = String(ev.type || '').toLowerCase();
+    if (!t.includes('renew') && !t.includes('payment')) return;
+    var d = parseFlexDate(ev.event_date);
+    if (!d) return;
+    d.setHours(0,0,0,0);
+    var daysAway = Math.round((d - today0) / 86400000);
+    if (daysAway < 0) return;
+    var cname = String(ev.client || ev.am_name || '').trim();
+    if (!cname) return;
+    if (!renewalMap[cname] || daysAway < renewalMap[cname].daysAway)
+      renewalMap[cname] = { dateStr: ev.event_date, daysAway: daysAway };
+  });
+
+  var ALERT_W = { critical: 100, warning: 50, watch: 10, ok: 0 };
+
+  var clients = clientOrder.map(function(name) {
+    var rows = byClient[name];
+    var flagMap = {};
+    rows.forEach(function(r) { flagMap[r.flag] = r; });
+
+    var hookF = flagMap['Hook (TL/NP)']     || null;
+    var offF  = flagMap['Offer (Rev/TL)']   || null;
+    var canF  = flagMap['Cancellation']     || null;
+    var loyF  = flagMap['Loyalty Drop']     || null;
+    var lovF  = flagMap['Low Volume (NP<7)']|| null;
+
+    var covGap     = rows[0] ? String(rows[0].coverage_gap  || '') : '';
+    var lastEntry  = rows[0] ? String(rows[0].last_entry    || '') : '';
+    var missingWks = rows[0] ? String(rows[0].missing_weeks || '') : '';
+    var updatedAt  = rows[0] ? String(rows[0].updated       || '') : '';
+
+    // Low Volume w1-w6 = raw patient counts (integers)
+    var lovWvals = [];
+    if (lovF) {
+      [lovF.w1,lovF.w2,lovF.w3,lovF.w4,lovF.w5,lovF.w6].forEach(function(v) {
+        if (v && v !== '' && v !== 'undefined') { var n = parseInt(v,10); if (!isNaN(n)) lovWvals.push(n); }
+      });
+    }
+    var avgNP = lovWvals.length ? lovWvals.reduce(function(s,v){return s+v;},0)/lovWvals.length : 0;
+
+    // Hook week values — detect all-zero / all-n/a
+    var hookWvals = [];
+    if (hookF) {
+      [hookF.w1,hookF.w2,hookF.w3,hookF.w4,hookF.w5,hookF.w6].forEach(function(v) {
+        if (v && v !== '' && v !== 'undefined') hookWvals.push(v);
+      });
+    }
+    var allHookZeroOrNA  = hookWvals.length === 0 || hookWvals.every(function(v) { return v === '0%' || v === 'n/a'; });
+    var coverageAllZero  = covGap.includes('all NP/TL = 0');
+
+    var hookStreak = hookF ? (hookF.streak || 0) : 0;
+    var hookAlert  = hookF ? (hookF.alert_level || 'ok') : 'ok';
+    var lovStreak  = lovF  ? (lovF.streak  || 0) : 0;
+    var lovAlert   = lovF  ? (lovF.alert_level  || 'ok') : 'ok';
+
+    // Priority score
+    var flagScore = 0, totalStreak = 0;
+    [{f:hookF,mult:1.0},{f:offF,mult:1.0},{f:canF,mult:1.0},{f:loyF,mult:1.0},{f:lovF,mult:1.5}].forEach(function(x) {
+      if (!x.f) return;
+      flagScore   += (ALERT_W[x.f.alert_level] || 0) * x.mult;
+      totalStreak += (x.f.streak || 0);
+    });
+
+    // Renewal lookup (exact name, then case-insensitive fallback)
+    var renewal = renewalMap[name] || null;
+    if (!renewal) {
+      var nl = name.toLowerCase().trim();
+      Object.keys(renewalMap).forEach(function(k) {
+        if (k.toLowerCase().trim() === nl) renewal = renewalMap[k];
+      });
+    }
+    var renewalDays    = renewal ? renewal.daysAway : null;
+    var renewalDateStr = renewal ? renewal.dateStr  : null;
+    var renewalUrgent  = renewalDays !== null && renewalDays <= 14;
+    var priorityScore  = (flagScore * (renewalUrgent ? 2.0 : 1.0)) + (totalStreak * 0.1);
+
+    // Tier (checked top-down, first match wins)
+    var criticalCount = rows.filter(function(r){ return r.alert_level==='critical'; }).length;
+    var warnOrHigher  = rows.filter(function(r){ return r.alert_level==='critical'||r.alert_level==='warning'; }).length;
+    var tier;
+    if      (criticalCount >= 2)                    tier = 'double-critical';
+    else if (warnOrHigher >= 1 && renewalUrgent)    tier = 'renewal-risk';
+    else if (criticalCount === 1)                   tier = 'critical';
+    else if (warnOrHigher >= 1 || totalStreak >= 1) tier = 'watch';
+    else                                            tier = 'healthy';
+
+    // Diagnosis hints — max 2, order corrected per design review
+    var hints = [];
+
+    // Rule A (FIRST): Tracking — patients arriving (avgNP>=10) but TL not firing
+    if (hookStreak >= 4 && avgNP >= 10) {
+      hints.push({ type:'tracking', text:'Tracking issue — ' + Math.round(avgNP) + ' patients/wk arriving, trigger link not firing. Fix integration BEFORE changing strategy.' });
+    }
+    // Rule B: Funnel failure — Hook AND Low Volume both critical (catches Layan, Wared, Haitham)
+    if (hookAlert === 'critical' && lovAlert === 'critical' && !hints.some(function(h){ return h.type==='tracking'; })) {
+      hints.push({ type:'funnel', text:'Funnel failure — few patients AND no trigger engagement' });
+    }
+    // Rule C: Trigger never set up — Hook critical + all zero + Low Vol NOT critical
+    if (hookStreak >= 4 && (allHookZeroOrNA||coverageAllZero) && lovAlert !== 'critical' && !hints.length) {
+      hints.push({ type:'setup', text:'Trigger link likely never set up in GHL — Hook uncomputable' });
+    }
+    // Rule D: Acquisition alone — Low Vol critical, Hook not critical
+    if (lovAlert === 'critical' && hookAlert !== 'critical' && !hints.length) {
+      hints.push({ type:'acquisition', text:'Acquisition problem — patients not arriving' });
+    }
+    // Rule E: Recovering — all streaks now 0 but had a significant past streak
+    if (!hints.length) {
+      var maxHistoric = Math.max.apply(null, rows.map(function(r){ return r.max_streak||0; }));
+      if (totalStreak === 0 && maxHistoric >= 3)
+        hints.push({ type:'recovering', text:'Recovered — was ' + maxHistoric + 'wk streak, now clear' });
+    }
+    // Secondary: funnel failure + Hook always 0% → add trigger setup note as second hint
+    if (hints.length === 1 && hints[0].type === 'funnel' && (allHookZeroOrNA||coverageAllZero)) {
+      hints.push({ type:'setup-secondary', text:'Hook 0% all weeks — verify trigger link setup in GHL' });
+    }
+
+    return {
+      name:name, flagMap:flagMap, rows:rows,
+      lovWvals:lovWvals, hookWvals:hookWvals, avgNP:avgNP,
+      hookStreak:hookStreak, hookAlert:hookAlert,
+      lovStreak:lovStreak,  lovAlert:lovAlert,
+      covGap:covGap, lastEntry:lastEntry, missingWks:missingWks, updatedAt:updatedAt,
+      renewalDays:renewalDays, renewalDateStr:renewalDateStr, renewalUrgent:renewalUrgent,
+      tier:tier, priorityScore:priorityScore, hints:hints,
+    };
+  });
+
+  // Sort: tier order, then priorityScore descending within each tier
+  var TIER_ORDER = {'double-critical':0,'renewal-risk':1,'critical':2,'watch':3,'healthy':4};
+  clients.sort(function(a,b) {
+    var d = (TIER_ORDER[a.tier]||99) - (TIER_ORDER[b.tier]||99);
+    return d !== 0 ? d : b.priorityScore - a.priorityScore;
+  });
+
+  return clients;
+}
+
+function toggleTierSection(bodyId, headerEl) {
+  var el = document.getElementById(bodyId);
+  if (!el) return;
+  var isHidden = el.style.display === 'none';
+  el.style.display = isHidden ? '' : 'none';
+  var chev = headerEl.querySelector('.tier-chevron');
+  if (chev) chev.textContent = isHidden ? '▲' : '▼';
+}
+
+function toggleTriageCard(name) {
+  _expandedClients[name] = !_expandedClients[name];
+  var safeId  = name.replace(/[^a-zA-Z0-9]/g,'_');
+  var detail  = document.getElementById('triage-detail-'  + safeId);
+  var chevron = document.getElementById('triage-chevron-' + safeId);
+  if (detail)  detail.style.display  = _expandedClients[name] ? 'block' : 'none';
+  if (chevron) chevron.textContent   = _expandedClients[name] ? '▲' : '▼';
+}
+
+function renderTriageView(clients) {
   var body = document.getElementById('breach-body');
-  if (!rows.length) {
+  if (!clients.length) {
     body.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--muted)">No breach data — run --breach-audit first.</div>';
     return;
   }
 
-  // Group by client (preserving flag order within each client)
-  var clientOrder = [];
-  var byClient = {};
-  rows.forEach(function(r) {
-    if (!byClient[r.client]) { byClient[r.client] = []; clientOrder.push(r.client); }
-    byClient[r.client].push(r);
-  });
-  // Sort clients by worst streak descending, then name
-  clientOrder.sort(function(a, b) {
-    var maxA = Math.max.apply(null, byClient[a].map(function(r){ return r.streak || 0; }));
-    var maxB = Math.max.apply(null, byClient[b].map(function(r){ return r.streak || 0; }));
-    return maxB - maxA || a.localeCompare(b);
-  });
+  var dcCount = clients.filter(function(c){ return c.tier==='double-critical'; }).length;
+  var rrCount = clients.filter(function(c){ return c.tier==='renewal-risk'; }).length;
+  var trCount = clients.filter(function(c){ return c.hints.some(function(h){ return h.type==='tracking'; }); }).length;
+  var suCount = clients.filter(function(c){ return c.hints.some(function(h){ return h.type==='setup'||h.type==='setup-secondary'; }); }).length;
 
-  var FLAG_ORDER = ['Hook (TL/NP)', 'Offer (Rev/TL)', 'Cancellation', 'Loyalty Drop'];
+  var html = '';
 
-  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px">';
+  // ── Needs Action banner ──────────────────────────────────────────────────
+  html += '<div class="triage-banner">';
+  html += '<span class="triage-banner-label">Needs Action</span>';
+  if (dcCount) html += '<span class="triage-badge triage-badge-red">'    + dcCount + ' Double-Critical</span>';
+  if (rrCount) html += '<span class="triage-badge triage-badge-orange">' + rrCount + ' Renewal Risk</span>';
+  if (trCount) html += '<span class="triage-badge triage-badge-amber">'  + trCount + ' Tracking Issue</span>';
+  if (suCount) html += '<span class="triage-badge triage-badge-purple">' + suCount + ' Trigger Not Setup</span>';
+  if (!dcCount && !rrCount && !trCount && !suCount)
+    html += '<span style="color:var(--green);font-weight:600">&#10003; All clear</span>';
+  html += '</div>';
 
-  clientOrder.forEach(function(name) {
-    var clientRows = byClient[name].filter(function(r) { return r.flag !== 'ERROR'; });
-    if (!clientRows.length) return;
+  var HINT_META = {
+    'tracking':        { icon:'⚠', color:'#92400E', bg:'#FEF3C7', border:'#F59E0B' },
+    'funnel':          { icon:'✗', color:'#991B1B', bg:'#FEE2E2', border:'#EF4444' },
+    'setup':           { icon:'⚠', color:'#5B21B6', bg:'#EDE9FE', border:'#A78BFA' },
+    'setup-secondary': { icon:'↳', color:'#6D28D9', bg:'#F5F3FF', border:'#C4B5FD' },
+    'acquisition':     { icon:'✗', color:'#9A3412', bg:'#FFF7ED', border:'#FB923C' },
+    'recovering':      { icon:'✓', color:'#166534', bg:'#F0FDF4', border:'#4ADE80' },
+  };
 
-    // Max streak across all flags → card-level alert
-    var maxStreak = Math.max.apply(null, clientRows.map(function(r) { return r.streak || 0; }));
-    var cardPill = '', pillClass = '', alertLabel = '';
-    if (maxStreak >= 4)      { pillClass = 'pill-red';    alertLabel = 'CRITICAL ' + maxStreak + 'wk'; }
-    else if (maxStreak >= 3) { pillClass = 'pill-amber';  alertLabel = 'WARNING '  + maxStreak + 'wk'; }
-    else if (maxStreak >= 1) { pillClass = 'pill-purple'; alertLabel = 'WATCH '    + maxStreak + 'wk'; }
-    if (pillClass) cardPill = '<span class="pill ' + pillClass + '">' + escHtml(alertLabel) + '</span>';
+  var FLAG_ORDER = ['Hook (TL/NP)','Offer (Rev/TL)','Cancellation','Loyalty Drop','Low Volume (NP<7)'];
+  var FLAG_SHORT = {
+    'Hook (TL/NP)':'Hook','Offer (Rev/TL)':'Offer',
+    'Cancellation':'Cancel','Loyalty Drop':'Loyalty','Low Volume (NP<7)':'Low Vol',
+  };
 
-    // GHL counter from first row's updated field isn't available; use last_entry + missing_weeks
-    var le = clientRows[0] && clientRows[0].last_entry && clientRows[0].last_entry !== 'undefined'
-             ? clientRows[0].last_entry : '';
-    var ghlInfo = le ? '<span class="breach-client-ghl">Last entry: ' + escHtml(le) + '</span>' : '';
+  var TIERS = [
+    { key:'double-critical', label:'Double Critical', open:true  },
+    { key:'renewal-risk',    label:'Renewal Risk',    open:true  },
+    { key:'critical',        label:'Critical',         open:true  },
+    { key:'watch',           label:'Watch',            open:true  },
+    { key:'healthy',         label:'Healthy',          open:false },
+  ];
 
-    html += '<div class="breach-client-card">';
-    html += '<div class="breach-client-header"><span class="breach-client-name">' + escHtml(name) + '</span>' + cardPill + ghlInfo + '</div>';
+  TIERS.forEach(function(tier) {
+    var tc = clients.filter(function(c){ return c.tier===tier.key; });
+    if (!tc.length) return;
+    var bodyId = 'tier-body-' + tier.key;
 
-    // Sort flags in canonical order
-    var orderedFlags = FLAG_ORDER.map(function(fl) {
-      return clientRows.find(function(r) { return r.flag === fl; });
-    }).filter(Boolean);
+    html += '<div class="triage-tier-header triage-tier-' + tier.key + '" onclick="toggleTierSection(\'' + bodyId + '\',this)">';
+    html += '<span>' + escHtml(tier.label) + ' <span style="font-weight:400;opacity:.7">(' + tc.length + ')</span></span>';
+    html += '<span class="tier-chevron">' + (tier.open ? '▲' : '▼') + '</span>';
+    html += '</div>';
+    html += '<div id="' + bodyId + '" ' + (tier.open ? '' : 'style="display:none"') + '>';
 
-    orderedFlags.forEach(function(r) {
-      if ((r.streak || 0) === 0 && (r.max_streak || 0) === 0) return; // skip clean flags
+    tc.forEach(function(c) {
+      var safeId   = c.name.replace(/[^a-zA-Z0-9]/g,'_');
+      var detailId = 'triage-detail-'   + safeId;
+      var chevId   = 'triage-chevron-'  + safeId;
+      var isExp    = !!_expandedClients[c.name];
 
-      var weeks = [r.w1, r.w2, r.w3, r.w4, r.w5, r.w6]
-        .filter(function(w) { return w && w !== '' && w !== 'undefined'; });
-      var streakPill = '';
-      if (r.streak >= 4)      streakPill = '<span class="pill pill-red">'    + r.streak + 'wk</span>';
-      else if (r.streak >= 3) streakPill = '<span class="pill pill-amber">'  + r.streak + 'wk</span>';
-      else if (r.streak >= 1) streakPill = '<span class="pill pill-purple">' + r.streak + 'wk</span>';
+      // ── Collapsed card row ──────────────────────────────────────────────
+      html += '<div class="triage-card" onclick="toggleTriageCard(' + JSON.stringify(c.name) + ')">';
+      html += '<div class="triage-card-row">';
+      html += '<span class="triage-name">' + escHtml(c.name) + '</span>';
 
-      html += '<div class="breach-flag-row">';
-      html += '<span class="breach-flag-label">' + escHtml(r.flag) + '</span>';
-      html += streakPill;
-      html += '<span class="breach-weeks">' + weeks.map(escHtml).join(' · ') + '</span>';
-      html += '</div>';
+      // Active flag pills
+      html += '<span class="triage-flags">';
+      FLAG_ORDER.forEach(function(fl) {
+        var r = c.flagMap[fl];
+        if (!r || !(r.streak)) return;
+        var pc = r.streak >= 4 ? 'pill-red' : r.streak >= 3 ? 'pill-amber' : 'pill-purple';
+        html += '<span class="pill ' + pc + '" style="font-size:.68rem">' + escHtml(FLAG_SHORT[fl]||fl) + ' ' + r.streak + 'wk</span>';
+      });
+      html += '</span>';
+
+      // Renewal badge (shown whenever we have a future renewal date)
+      if (c.renewalDateStr) {
+        var rDate = parseFlexDate(c.renewalDateStr);
+        var rLabel = rDate
+          ? (String(rDate.getDate()).padStart(2,'0') + '/' + String(rDate.getMonth()+1).padStart(2,'0'))
+          : c.renewalDateStr;
+        var rBg    = c.renewalDays <= 7  ? '#FEE2E2' : c.renewalDays <= 14 ? '#FEF3C7' : '#F1F5F9';
+        var rColor = c.renewalDays <= 7  ? '#991B1B' : c.renewalDays <= 14 ? '#92400E' : 'var(--muted)';
+        html += '<span class="triage-renewal-badge" style="background:' + rBg + ';color:' + rColor + '">';
+        html += 'Renewal ' + escHtml(rLabel) + ' &middot; ' + c.renewalDays + 'd';
+        html += '</span>';
+      }
+
+      html += '<span class="triage-chevron" id="' + escHtml(chevId) + '">' + (isExp?'▲':'▼') + '</span>';
+      html += '</div>'; // card-row
+
+      // Primary hint preview (inline, always visible)
+      if (c.hints.length) {
+        var h0 = c.hints[0];
+        var hm0 = HINT_META[h0.type] || { icon:'·', color:'var(--muted)' };
+        html += '<div class="triage-hint-inline" style="color:' + hm0.color + '">';
+        html += escHtml(hm0.icon + ' ' + h0.text);
+        html += '</div>';
+      }
+
+      // ── Expanded detail ─────────────────────────────────────────────────
+      html += '<div id="' + escHtml(detailId) + '" style="display:' + (isExp?'block':'none') + ';margin-top:14px;border-top:1px solid rgba(168,153,219,.15);padding-top:14px">';
+
+      // Full hint box(es)
+      c.hints.forEach(function(h) {
+        var hm = HINT_META[h.type] || { icon:'·', color:'#333', bg:'#f9f9f9', border:'#ccc' };
+        html += '<div class="triage-hint-box" style="background:' + hm.bg + ';border-left:3px solid ' + hm.border + ';color:' + hm.color + '">';
+        html += '<strong>' + escHtml(hm.icon) + '</strong> ' + escHtml(h.text);
+        html += '</div>';
+      });
+
+      // Flag detail table
+      html += '<div class="triage-flag-table"><table>';
+      html += '<thead><tr><th>Flag</th><th>Alert</th><th>Streak</th><th>Max</th><th>W1</th><th>W2</th><th>W3</th><th>W4</th><th>W5</th><th>W6</th></tr></thead>';
+      html += '<tbody>';
+
+      FLAG_ORDER.forEach(function(fl) {
+        var r = c.flagMap[fl];
+        if (!r) return;
+
+        var wvals = [r.w1,r.w2,r.w3,r.w4,r.w5,r.w6].map(function(v) {
+          return (!v||v===''||v==='undefined') ? '' : String(v);
+        });
+
+        var aBg    = r.alert_level==='critical'?'#FEE2E2':r.alert_level==='warning'?'#FEF3C7':r.alert_level==='watch'?'#EDE9FE':'';
+        var aColor = r.alert_level==='critical'?'#991B1B':r.alert_level==='warning'?'#92400E':r.alert_level==='watch'?'#5B21B6':'var(--muted)';
+        var aLabel = r.alert_level==='ok'?'—':r.alert_level.toUpperCase();
+        var isOk   = r.alert_level==='ok' && !(r.max_streak);
+
+        html += '<tr class="' + (isOk?'flag-row-ok':'') + '">';
+        html += '<td class="flag-name">' + escHtml(fl) + '</td>';
+        html += '<td style="background:' + aBg + ';color:' + aColor + ';font-weight:600;font-size:.68rem;white-space:nowrap">' + escHtml(aLabel) + '</td>';
+        html += '<td>' + (r.streak  ? r.streak  + 'wk' : '—') + '</td>';
+        html += '<td>' + (r.max_streak ? r.max_streak + 'wk' : '—') + '</td>';
+        wvals.forEach(function(v) {
+          html += '<td>' + (v ? escHtml(v) : '<span style="color:#d1d5db">—</span>') + '</td>';
+        });
+        html += '</tr>';
+
+        // Synthetic "New Patients / wk" row pinned under Hook
+        if (fl === 'Hook (TL/NP)' && c.lovWvals.length > 0) {
+          var lovR   = c.flagMap['Low Volume (NP<7)'];
+          var npCells = [lovR?lovR.w1:'', lovR?lovR.w2:'', lovR?lovR.w3:'', lovR?lovR.w4:'', lovR?lovR.w5:'', lovR?lovR.w6:''];
+          html += '<tr class="np-synthetic-row">';
+          html += '<td class="flag-name" style="padding-left:20px;color:#3B82F6;font-style:italic">&#x21B3; New Patients / wk</td>';
+          html += '<td></td><td></td><td></td>';
+          npCells.forEach(function(v) {
+            var disp = (!v||v===''||v==='undefined') ? '' : String(v);
+            html += '<td style="color:#1D4ED8;font-weight:600">' + (disp ? escHtml(disp) : '<span style="color:#d1d5db">—</span>') + '</td>';
+          });
+          html += '</tr>';
+        }
+      });
+
+      html += '</tbody></table></div>'; // flag-table
+
+      // Coverage / missing weeks notes
+      if (c.covGap && c.covGap !== 'undefined' && c.covGap !== '') {
+        html += '<div class="breach-coverage-note" style="margin-top:10px">&#9888; ' + escHtml(c.covGap) + '</div>';
+      }
+      if (c.missingWks && c.missingWks !== 'undefined' && c.missingWks !== '') {
+        html += '<div class="breach-coverage-note" style="margin-top:6px">&#9888; Missing weeks: ' + escHtml(c.missingWks) + '</div>';
+      }
+
+      // Meta line
+      var meta = [];
+      if (c.lastEntry  && c.lastEntry  !== 'undefined') meta.push('Last entry: '  + c.lastEntry);
+      if (c.updatedAt  && c.updatedAt  !== 'undefined') meta.push('Audited: '     + c.updatedAt.substring(0,16));
+      if (meta.length) html += '<div style="font-size:.71rem;color:var(--muted);margin-top:10px">' + escHtml(meta.join('  ·  ')) + '</div>';
+
+      // Change Strategy button
+      html += '<div style="margin-top:14px"><button class="breach-sc-btn" onclick="event.stopPropagation();openStrategyModal(' + JSON.stringify(c.name) + ')">&#9881; Change Strategy</button></div>';
+
+      html += '</div>'; // detail
+      html += '</div>'; // card
     });
 
-    // Coverage / missing weeks note
-    var covGap = clientRows[0] && clientRows[0].coverage_gap;
-    if (covGap && covGap !== '' && covGap !== 'undefined') {
-      html += '<div class="breach-coverage-note">&#9888; ' + escHtml(covGap) + '</div>';
-    }
-    var missingWks = clientRows[0] && clientRows[0].missing_weeks;
-    if (missingWks && missingWks !== '' && missingWks !== 'undefined') {
-      html += '<div class="breach-coverage-note">&#9888; Missing weeks: ' + escHtml(missingWks) + '</div>';
-    }
-
-    // Change Strategy button — threeup / hamzeh only
-    if (_activeAdminUser === 'threeup' || _activeAdminUser === 'hamzeh') {
-      html += '<div style="border-top:1px solid rgba(168,153,219,.15);margin-top:12px;padding-top:10px">';
-      html += '<button class="breach-sc-btn" onclick="openStrategyModal(' + JSON.stringify(name) + ')">&#9881; Change Strategy</button>';
-      html += '</div>';
-    }
-
-    html += '</div>';
+    html += '</div>'; // tier body
   });
 
-  html += '</div>';
   body.innerHTML = html;
 }
 
