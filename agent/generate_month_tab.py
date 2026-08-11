@@ -40,7 +40,7 @@ from good_report_engine import _get_sheets_service, AM_DATES_SHEET_ID, _parse_da
 MASTER_TAB = "Clients Master"
 
 MONTH_TAB_TITLE_ROW = "{label} — Account Manager Communication Dates"
-MONTH_TAB_HEADER    = ["Client Name", "Sustainability", "Renewal", "Payment Date", "Term"]
+MONTH_TAB_HEADER    = ["Client Name", "Sus 1", "Sus 2", "Sus 3", "Renewal", "Payment Date", "Term"]
 
 # Column indices in master (0-based)
 COL_NAME     = 0
@@ -142,6 +142,32 @@ def _compute_renewal(next_payment, renewal_pattern):
     return next_payment - timedelta(days=6)
 
 
+def _sus_dates_in_month(term_start, next_pay, sus_pattern, t_start, t_end):
+    """Return list of 3 sus date strings (dd/mm/yyyy) that fall in [t_start, t_end].
+    Slots with no date are empty strings."""
+    is_fixed = sus_pattern.startswith("fixed:")
+    sday     = int(sus_pattern.split(":")[1]) if is_fixed else None
+    dates    = []
+    d        = _first_sus(term_start, sus_pattern)
+    while d < next_pay:
+        if d > t_end:
+            break
+        if d >= t_start:
+            dates.append(d.strftime("%d/%m/%Y"))
+        if is_fixed:
+            d = d + relativedelta(months=1)
+            try:
+                d = date(d.year, d.month, sday)
+            except ValueError:
+                d = date(d.year, d.month, 28)
+        else:
+            d += timedelta(days=14)
+    result = dates[:3]
+    while len(result) < 3:
+        result.append("")
+    return result
+
+
 # ── Row computation ───────────────────────────────────────────────────────────
 
 def _compute_rows(clients, target_year, target_month):
@@ -190,18 +216,20 @@ def _compute_rows(clients, target_year, target_month):
         if not found:
             continue
 
-        renewal  = _compute_renewal(next_pay, c["renewal_pattern"])
-        first_s  = _first_sus(term_start, c["sus_pattern"])
+        renewal   = _compute_renewal(next_pay, c["renewal_pattern"])
+        sus_dates = _sus_dates_in_month(term_start, next_pay, c["sus_pattern"], t_start, t_end)
 
         tab_rows.append([
             c["am_name"],
-            first_s.strftime("%d/%m/%Y"),
+            sus_dates[0],
+            sus_dates[1],
+            sus_dates[2],
             renewal.strftime("%d/%m/%Y"),
             next_pay.strftime("%d/%m/%Y"),
             c["term_label"],
         ])
 
-    # Sort by sustainability date (earliest term start first)
+    # Sort by Sus 1 date (earliest first)
     tab_rows.sort(key=lambda r: r[1])
     return tab_rows, skipped, anchor_updates
 
@@ -225,7 +253,7 @@ def _write_month_tab(service, month_label, tab_rows):
         ).execute()
         service.spreadsheets().values().update(
             spreadsheetId=AM_DATES_SHEET_ID,
-            range=f"'{month_label}'!A1:E2",
+            range=f"'{month_label}'!A1:G2",
             valueInputOption="RAW",
             body={"values": [
                 [MONTH_TAB_TITLE_ROW.format(label=month_label)],
@@ -236,7 +264,7 @@ def _write_month_tab(service, month_label, tab_rows):
         print(f"  Tab '{month_label}' exists — clearing data rows (3+) only")
         service.spreadsheets().values().clear(
             spreadsheetId=AM_DATES_SHEET_ID,
-            range=f"'{month_label}'!A3:E1000",
+            range=f"'{month_label}'!A3:G1000",
         ).execute()
 
     if not tab_rows:
@@ -311,12 +339,12 @@ def main():
         print(f"  Skipped:  {', '.join(skipped)}")
 
     # Print summary table
-    print(f"\n{'─'*76}")
-    print(f"{'Client':<28} {'Sustainability':14} {'Renewal':12} {'Payment':12} {'Term'}")
-    print(f"{'─'*76}")
+    print(f"\n{'─'*96}")
+    print(f"{'Client':<28} {'Sus 1':12} {'Sus 2':12} {'Sus 3':12} {'Renewal':12} {'Payment':12} {'Term'}")
+    print(f"{'─'*96}")
     for row in tab_rows:
-        print(f"{row[0]:<28} {row[1]:14} {row[2]:12} {row[3]:12} {row[4]}")
-    print(f"{'─'*76}")
+        print(f"{row[0]:<28} {row[1]:12} {row[2]:12} {row[3]:12} {row[4]:12} {row[5]:12} {row[6]}")
+    print(f"{'─'*96}")
     print(f"Total: {len(tab_rows)} rows for '{month_label}'")
 
     if dry_run:

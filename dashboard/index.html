@@ -925,13 +925,11 @@
     <div class="nav-brand">&#9889; ThreeUp CAO</div>
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchTab('tab-input', this)">Weekly Input</button>
-      <button class="nav-tab" onclick="switchTab('tab-notes', this)">Notes History</button>
-      <button class="nav-tab" onclick="switchTab('tab-status', this)">Client Status</button>
       <button class="nav-tab" onclick="switchTab('tab-insights', this); loadInsights();">&#128202; Insights</button>
-      <button class="nav-tab" id="tab-intel-btn" style="display:none" onclick="switchTab('tab-intel', this); loadIntelligence();">&#129504; Intelligence</button>
-      <button class="nav-tab" id="tab-schedule-btn" style="display:none" onclick="switchTab('tab-schedule', this); loadScheduleTab();">&#128197; Schedule</button>
-      <button class="nav-tab" id="tab-agenda-btn" style="display:none" onclick="switchTab('tab-agenda', this); loadAgenda();">&#128336; Agenda</button>
-      <button class="nav-tab" id="tab-breach-btn" style="display:none" onclick="switchTab('tab-breach', this); loadBreachMonitor();">&#128680; Breach Monitor</button>
+      <button class="nav-tab" id="tab-intel-btn" onclick="switchTab('tab-intel', this); loadIntelligence();">&#129504; Intelligence</button>
+      <button class="nav-tab" id="tab-schedule-btn" onclick="switchTab('tab-schedule', this); loadScheduleTab();">&#128197; Schedule</button>
+      <button class="nav-tab" id="tab-agenda-btn" onclick="switchTab('tab-agenda', this); loadAgenda();">&#128336; Agenda</button>
+      <button class="nav-tab" id="tab-breach-btn" onclick="switchTab('tab-breach', this); loadBreachMonitor();">&#128680; Breach Monitor</button>
     </div>
     <div class="nav-right">
       <span class="nav-user-badge" id="admin-user-badge">Admin</span>
@@ -968,56 +966,7 @@
     </div>
   </div>
 
-  <!-- TAB 2: Notes History -->
-  <div id="tab-notes" class="tab-content">
-    <h2>Notes History</h2>
-    <div class="filters-row">
-      <div class="filter-group">
-        <label>Week</label>
-        <select class="filter-select" id="week-select"></select>
-      </div>
-      <div class="filter-group">
-        <label>Client</label>
-        <select class="filter-select-sm" id="client-filter">
-          <option value="">All Clients</option>
-        </select>
-      </div>
-      <button class="btn btn-blue" onclick="loadNotes()">Load Notes</button>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Client</th>
-            <th>Date</th>
-            <th>Note</th>
-          </tr>
-        </thead>
-        <tbody id="notes-tbody">
-          <tr><td colspan="3" class="loading-row" style="color:var(--muted);text-align:center;padding:40px">Select a week and click Load Notes</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- TAB 3: Client Status -->
-  <div id="tab-status" class="tab-content">
-    <h2>Client Status</h2>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-      <button class="btn btn-blue" onclick="loadClientStatus()">&#8635; Refresh</button>
-      <select id="status-week-filter" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px" onchange="filterStatusTable()">
-        <option value="all">All Weeks</option>
-      </select>
-      <button class="btn" style="background:var(--surface2)" onclick="exportStatusCSV()">&#8659; Export CSV</button>
-      <span class="summary-msg" id="status-summary"></span>
-    </div>
-    <div id="status-summary-bar" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px"></div>
-    <div class="table-wrap" id="status-table-wrap">
-      <div style="color:var(--muted);padding:40px;text-align:center">Click <b>Refresh</b> to load client status</div>
-    </div>
-  </div>
-
-  <!-- TAB 5: Intelligence OS (admin only: threeup, hamzeh) -->
+  <!-- TAB: Intelligence OS -->
   <div id="tab-intel" class="tab-content">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:28px">
       <div>
@@ -1035,12 +984,12 @@
     </div>
   </div>
 
-  <!-- TAB 6: Schedule (admin only: threeup, hamzeh) -->
+  <!-- TAB: Schedule -->
   <div id="tab-schedule" class="tab-content">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
       <div>
         <h2 style="margin-bottom:4px">&#128197; Good Report Schedule</h2>
-        <div class="page-subtitle">Upcoming &middot; Due today &middot; Overdue</div>
+        <div class="page-subtitle">Upcoming &middot; Due today &middot; Overdue &middot; 30-day timeline</div>
       </div>
       <button class="btn btn-blue" onclick="loadScheduleTab()">&#8635; Refresh</button>
     </div>
@@ -1049,7 +998,7 @@
     <div id="schedule-due-today" style="margin-bottom:20px"></div>
 
     <!-- Full schedule table -->
-    <div class="table-wrap">
+    <div class="table-wrap" style="margin-bottom:32px">
       <table id="schedule-table">
         <thead>
           <tr>
@@ -1067,6 +1016,15 @@
           <tr><td colspan="8" class="loading-row"><span class="spinner"></span> Loading schedule&hellip;</td></tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- 30-day future events timeline -->
+    <div style="margin-bottom:12px">
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Next 30 Days</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:18px">Sustainability &amp; renewal events from the CAO calendar</div>
+      <div id="schedule-timeline">
+        <div style="text-align:center;padding:40px;color:var(--muted)"><span class="spinner"></span> Loading timeline&hellip;</div>
+      </div>
     </div>
   </div>
 
@@ -1240,7 +1198,7 @@
 // CONFIG
 // ═══════════════════════════════════════════
 const CONFIG = {
-  THREEUP_API_KEY: "pit-a5b6ba64-25d8-41c2-a472-0e5a083ae283",
+  THREEUP_API_KEY: "",
   APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycby5kUoSPWjTeBYGE1iRKDvEZ_bJhz99oeNa_EE6YE1NMto1VhCnlYB45YcQm-IaZZGx/exec",
   COUNTER_FIELD_ID: "nNx5vev4O2dBgLbqYNSh",
   CLIENTS: [
@@ -1332,10 +1290,9 @@ const GHL_BASE = "https://services.leadconnectorhq.com";
 // AUTH
 // ═══════════════════════════════════════════
 const ADMIN_USERS = {
-  "threeup":   "cao2026",
-  "hamzeh":    "hamzeh2026",
-  "laith":     "laith2026",
-  "marketing": "marketingpassword"
+  "threeup": "cao2026",
+  "hamzeh":  "hamzeh2026",
+  "laith":   "laith2026"
 };
 
 function doLogin() {
@@ -1381,50 +1338,7 @@ function showAdminDashboard(username) {
   dash.style.display = 'flex';
   dash.style.flexDirection = 'column';
   document.getElementById('admin-user-badge').textContent = username || 'Admin';
-
-  // Intelligence tab: only visible to threeup and hamzeh
-  var intelBtn = document.getElementById('tab-intel-btn');
-  if (intelBtn) {
-    intelBtn.style.display = (username === 'threeup' || username === 'hamzeh') ? '' : 'none';
-  }
-
-  // Schedule tab: only visible to threeup and hamzeh
-  var schedBtn = document.getElementById('tab-schedule-btn');
-  if (schedBtn) {
-    schedBtn.style.display = (username === 'threeup' || username === 'hamzeh') ? '' : 'none';
-  }
-
-  // Agenda tab: only visible to threeup and hamzeh
-  var agendaBtn = document.getElementById('tab-agenda-btn');
-  if (agendaBtn) {
-    agendaBtn.style.display = (username === 'threeup' || username === 'hamzeh') ? '' : 'none';
-  }
-
-  // Breach Monitor tab: only visible to threeup and hamzeh
-  var breachBtn = document.getElementById('tab-breach-btn');
-  if (breachBtn) {
-    breachBtn.style.display = (username === 'threeup' || username === 'hamzeh') ? '' : 'none';
-  }
-
-  if (username === 'marketing') {
-    // Hide all nav tabs except Insights
-    document.querySelectorAll('.nav-tab').forEach(function(btn) {
-      const isInsights = btn.getAttribute('onclick') && btn.getAttribute('onclick').indexOf('tab-insights') !== -1;
-      btn.style.display = isInsights ? '' : 'none';
-    });
-    // Activate Insights tab directly
-    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
-    document.getElementById('tab-insights').classList.add('active');
-    document.querySelectorAll('.nav-tab').forEach(function(b) { b.classList.remove('active'); });
-    document.querySelectorAll('.nav-tab').forEach(function(btn) {
-      if (btn.getAttribute('onclick') && btn.getAttribute('onclick').indexOf('tab-insights') !== -1) {
-        btn.classList.add('active');
-      }
-    });
-    loadInsights();
-  } else {
-    initDashboard();
-  }
+  initDashboard();
 }
 
 // ─── CLIENT PORTAL GLOBALS ───────────────────
@@ -1505,7 +1419,6 @@ document.getElementById('login-pass').addEventListener('keydown', function(e) {
 // TABS (admin)
 // ═══════════════════════════════════════════
 function switchTab(tabId, btn) {
-  if (_activeAdminUser === 'marketing' && tabId !== 'tab-insights') return;
   document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.nav-tab').forEach(function(b) { b.classList.remove('active'); });
   document.getElementById(tabId).classList.add('active');
@@ -3361,16 +3274,22 @@ var _scheduleLoaded = false;
 var _scheduleRefreshTimer = null;
 
 async function loadScheduleTab() {
-  const tbody = document.getElementById('schedule-tbody');
-  const dueEl = document.getElementById('schedule-due-today');
+  const tbody    = document.getElementById('schedule-tbody');
+  const dueEl    = document.getElementById('schedule-due-today');
+  const timelineEl = document.getElementById('schedule-timeline');
   if (!tbody) return;
 
   tbody.innerHTML = '<tr><td colspan="8" class="loading-row"><span class="spinner"></span> Loading schedule&hellip;</td></tr>';
   if (dueEl) dueEl.innerHTML = '';
+  if (timelineEl) timelineEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><span class="spinner"></span> Loading timeline&hellip;</div>';
 
   try {
-    const res = await fetch(CONFIG.APPS_SCRIPT_URL + '?action=getSchedule');
+    const [res, futureRes] = await Promise.all([
+      fetch(CONFIG.APPS_SCRIPT_URL + '?action=getSchedule'),
+      fetch(CONFIG.APPS_SCRIPT_URL + '?action=getFutureEvents'),
+    ]);
     const data = await res.json();
+    const futureData = await futureRes.json();
 
     if (!data || !Array.isArray(data.rows)) {
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">No schedule data available.</td></tr>';
@@ -3439,6 +3358,65 @@ async function loadScheduleTab() {
     });
     tbody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">No rows.</td></tr>';
     _scheduleLoaded = true;
+
+    // ── 30-day timeline from getFutureEvents ──────────────────────────────
+    if (timelineEl) {
+      try {
+        var futureRows = (futureData && Array.isArray(futureData.rows)) ? futureData.rows : [];
+        var todayMs = new Date().setHours(0,0,0,0);
+        var cutoffMs = todayMs + 30 * 86400000;
+
+        // Parse dates and filter to next 30 days
+        var events = futureRows
+          .map(function(r) {
+            var raw = String(r.event_date || '').trim();
+            // try DD/MM/YYYY, YYYY-MM-DD, MM/DD/YYYY
+            var d = null;
+            var m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (m) d = new Date(+m[3], +m[2]-1, +m[1]);
+            else { var nd = new Date(raw); if (!isNaN(nd)) d = nd; }
+            return { client: r.client, type: r.type, date: d, dateStr: raw, am: r.am_name };
+          })
+          .filter(function(e) { return e.date && e.date.getTime() >= todayMs && e.date.getTime() <= cutoffMs; })
+          .sort(function(a, b) { return a.date - b.date; });
+
+        if (events.length === 0) {
+          timelineEl.innerHTML = '<div style="color:var(--muted);padding:20px 0">No events in the next 30 days.</div>';
+        } else {
+          // Group by date string
+          var grouped = {};
+          var dateOrder = [];
+          events.forEach(function(e) {
+            var key = e.date.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
+            if (!grouped[key]) { grouped[key] = []; dateOrder.push(key); }
+            grouped[key].push(e);
+          });
+          var tlHtml = '';
+          var todayKey = new Date(todayMs).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
+          dateOrder.forEach(function(dk) {
+            var isToday = dk === todayKey;
+            tlHtml += '<div class="agenda-day-block">'
+              + '<div class="agenda-day-header' + (isToday ? ' agenda-day-today' : '') + '">'
+              + escHtml(dk) + (isToday ? ' <span style="font-size:11px;background:#A899DB;color:#fff;border-radius:4px;padding:1px 7px;font-weight:700">TODAY</span>' : '')
+              + '</div>';
+            grouped[dk].forEach(function(e) {
+              var typeColor = (e.type || '').toLowerCase().indexOf('renew') !== -1 ? '#dc3545' : '#2563eb';
+              var typeLabel = (e.type || 'event').replace(/sustainability/i, 'Sustainability').replace(/renewal/i, 'Renewal');
+              tlHtml += '<div class="agenda-event-row">'
+                + '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + typeColor + ';flex-shrink:0"></span>'
+                + '<span class="agenda-event-client">' + escHtml(e.client) + '</span>'
+                + '<span class="agenda-event-meta">' + escHtml(typeLabel) + '</span>'
+                + (e.am ? '<span class="agenda-event-next">' + escHtml(e.am) + '</span>' : '')
+                + '</div>';
+            });
+            tlHtml += '</div>';
+          });
+          timelineEl.innerHTML = tlHtml;
+        }
+      } catch (te) {
+        timelineEl.innerHTML = '<div style="color:var(--muted);padding:20px 0">Timeline unavailable: ' + escHtml(String(te)) + '</div>';
+      }
+    }
 
     // Auto-refresh every 30 minutes
     if (_scheduleRefreshTimer) clearTimeout(_scheduleRefreshTimer);

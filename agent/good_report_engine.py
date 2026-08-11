@@ -111,7 +111,7 @@ def _read_tab(service, title: str) -> list:
     """Parse one sheet tab and return a list of entry dicts."""
     data = service.spreadsheets().values().get(
         spreadsheetId=AM_DATES_SHEET_ID,
-        range=f"'{title}'!A:F",
+        range=f"'{title}'!A:H",
     ).execute()
 
     rows = data.get("values", [])
@@ -122,14 +122,14 @@ def _read_tab(service, title: str) -> list:
     for i, row in enumerate(rows):
         if i == 0:
             continue  # header
-        if len(row) < 4:
+        if len(row) < 6:
             continue
 
         client_name = str(row[0]).strip()
         sus_raw     = str(row[1]).strip() if len(row) > 1 else ""
-        renewal_raw = str(row[2]).strip() if len(row) > 2 else ""
-        payment_raw = str(row[3]).strip() if len(row) > 3 else ""
-        term        = str(row[4]).strip() if len(row) > 4 else ""
+        renewal_raw = str(row[4]).strip() if len(row) > 4 else ""
+        payment_raw = str(row[5]).strip() if len(row) > 5 else ""
+        term        = str(row[6]).strip() if len(row) > 6 else ""
 
         if not client_name or sus_raw.lower() in _SKIP:
             continue
@@ -668,6 +668,15 @@ def write_to_ghl(client: dict, message: str, settings: dict, message_type: str, 
     if r.status_code not in (200, 201):
         logger.error(f"[good_report] {name} — field write failed: {r.status_code} {r.text[:200]}")
         return False
+
+    # Strip stale tag first — GHL only fires the workflow when tagsAdded is
+    # non-empty, so re-adding an existing tag is a silent no-op. Delete ensures
+    # the subsequent POST always registers as a fresh add.
+    requests.delete(
+        f"{contact_url}/tags", headers=headers,
+        json={"tags": ["good-report-ready"]},
+        timeout=30,
+    )
 
     # Add tag to trigger GHL workflow
     r2 = requests.post(
@@ -1662,7 +1671,7 @@ def validate_tabs() -> None:
         for tab_name in month_tabs:
             raw_data = service.spreadsheets().values().get(
                 spreadsheetId=AM_DATES_SHEET_ID,
-                range=f"'{tab_name}'!A:F",
+                range=f"'{tab_name}'!A:H",
             ).execute()
             raw_rows   = raw_data.get("values", [])
             tab_entries = {}
@@ -1677,8 +1686,8 @@ def validate_tabs() -> None:
                     continue
 
                 sus_raw     = str(row[1]).strip() if len(row) > 1 else ""
-                renewal_raw = str(row[2]).strip() if len(row) > 2 else ""
-                payment_raw = str(row[3]).strip() if len(row) > 3 else ""
+                renewal_raw = str(row[4]).strip() if len(row) > 4 else ""
+                payment_raw = str(row[5]).strip() if len(row) > 5 else ""
 
                 if sus_raw.lower() in ("", "waiting", "pause"):
                     continue  # expected placeholder — not a data error
