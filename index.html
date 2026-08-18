@@ -3901,8 +3901,10 @@ function computeClientTriage(breachRows, futureRows) {
     else if (warnOrHigher >= 1 || totalStreak >= 1) tier = 'watch';
     else                                            tier = 'healthy';
 
-    // Diagnosis hints — max 2, order corrected per design review
+    // Diagnosis hints — up to 2 per client
     var hints = [];
+    // zeroDenom: NP=0 makes Hook 0÷0 — must never read as "ok"
+    var zeroDenom = avgNP === 0 && (allHookZeroOrNA || coverageAllZero) && lovAlert === 'critical';
 
     // Rule A (FIRST): Tracking — patients arriving (avgNP>=10) but TL not firing
     if (hookStreak >= 4 && avgNP >= 10) {
@@ -3912,9 +3914,14 @@ function computeClientTriage(breachRows, futureRows) {
     if (hookAlert === 'critical' && lovAlert === 'critical' && !hints.some(function(h){ return h.type==='tracking'; })) {
       hints.push({ type:'funnel', text:'Funnel failure — few patients AND no trigger engagement' });
     }
-    // Rule C: Trigger never set up — Hook critical + all zero + Low Vol NOT critical
-    if (hookStreak >= 4 && (allHookZeroOrNA||coverageAllZero) && lovAlert !== 'critical' && !hints.length) {
+    // Rule C: Trigger never set up — Hook streak + all-zero + Low Vol NOT critical + avgNP<10
+    // avgNP<10 guard: "are patients arriving?" must be tested before labelling as setup issue
+    if (hookStreak >= 4 && (allHookZeroOrNA||coverageAllZero) && lovAlert !== 'critical' && avgNP < 10 && !hints.length) {
       hints.push({ type:'setup', text:'Trigger link likely never set up in GHL — Hook uncomputable' });
+    }
+    // Rule Z: Zero denominator — NP=0 means Hook is 0÷0, not a healthy reading
+    if (zeroDenom && !hints.length) {
+      hints.push({ type:'zero-denom', text:'Zero new patients — Hook rate is 0÷0, not "ok". Fix acquisition first.' });
     }
     // Rule D: Acquisition alone — Low Vol critical, Hook not critical
     if (lovAlert === 'critical' && hookAlert !== 'critical' && !hints.length) {
@@ -3926,9 +3933,14 @@ function computeClientTriage(breachRows, futureRows) {
       if (totalStreak === 0 && maxHistoric >= 3)
         hints.push({ type:'recovering', text:'Recovered — was ' + maxHistoric + 'wk streak, now clear' });
     }
-    // Secondary: funnel failure + Hook always 0% → add trigger setup note as second hint
-    if (hints.length === 1 && hints[0].type === 'funnel' && (allHookZeroOrNA||coverageAllZero)) {
-      hints.push({ type:'setup-secondary', text:'Hook 0% all weeks — verify trigger link setup in GHL' });
+    // Secondary: after funnel, always surface the specific sub-cause as a 2nd hint
+    // (Layan/Wared are Hook-critical AND LowVol-critical — both must be visible)
+    if (hints.length === 1 && hints[0].type === 'funnel') {
+      if (allHookZeroOrNA || coverageAllZero) {
+        hints.push({ type:'setup-secondary', text:'Hook 0% all weeks — verify trigger link setup in GHL' });
+      } else if (lovAlert === 'critical') {
+        hints.push({ type:'acquisition', text:'Acquisition problem — patients not arriving' });
+      }
     }
 
     return {
@@ -3938,7 +3950,7 @@ function computeClientTriage(breachRows, futureRows) {
       lovStreak:lovStreak,  lovAlert:lovAlert,
       covGap:covGap, lastEntry:lastEntry, missingWks:missingWks, updatedAt:updatedAt,
       renewalDays:renewalDays, renewalDateStr:renewalDateStr, renewalUrgent:renewalUrgent,
-      tier:tier, priorityScore:priorityScore, hints:hints,
+      tier:tier, priorityScore:priorityScore, hints:hints, zeroDenom:zeroDenom,
     };
   });
 
@@ -4002,6 +4014,7 @@ function renderTriageView(clients) {
     'setup-secondary': { icon:'↳', color:'#6D28D9', bg:'#F5F3FF', border:'#C4B5FD' },
     'acquisition':     { icon:'✗', color:'#9A3412', bg:'#FFF7ED', border:'#FB923C' },
     'recovering':      { icon:'✓', color:'#166534', bg:'#F0FDF4', border:'#4ADE80' },
+    'zero-denom':      { icon:'∅', color:'#7C3AED', bg:'#F5F3FF', border:'#8B5CF6' },
   };
 
   var FLAG_ORDER = ['Hook (TL/NP)','Offer (Rev/TL)','Cancellation','Loyalty Drop','Low Volume (NP<7)'];
@@ -4102,7 +4115,14 @@ function renderTriageView(clients) {
         var aBg    = r.alert_level==='critical'?'#FEE2E2':r.alert_level==='warning'?'#FEF3C7':r.alert_level==='watch'?'#EDE9FE':'';
         var aColor = r.alert_level==='critical'?'#991B1B':r.alert_level==='warning'?'#92400E':r.alert_level==='watch'?'#5B21B6':'var(--muted)';
         var aLabel = r.alert_level==='ok'?'—':r.alert_level.toUpperCase();
-        var isOk   = r.alert_level==='ok' && !(r.max_streak);
+        // Zero-denominator override: NP=0 makes Hook (and Offer when all NP/TL=0) uncomputable — never show as "ok"
+        var _allZero = c.covGap && c.covGap.indexOf('all NP/TL = 0') !== -1;
+        if (c.zeroDenom && (fl === 'Hook (TL/NP)' || (fl === 'Offer (Rev/TL)' && _allZero))) {
+          aBg    = '#FEF3C7';
+          aColor = '#92400E';
+          aLabel = '0÷0';
+        }
+        var isOk   = r.alert_level==='ok' && !(r.max_streak) && !c.zeroDenom;
 
         html += '<tr class="' + (isOk?'flag-row-ok':'') + '">';
         html += '<td class="flag-name">' + escHtml(fl) + '</td>';

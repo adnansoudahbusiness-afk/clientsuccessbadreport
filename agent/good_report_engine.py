@@ -31,6 +31,7 @@ _ROOT            = os.path.dirname(_HERE)
 CREDENTIALS_PATH = os.path.join(_ROOT, "config", "credentials.json")
 _QUEUE_PATH      = os.path.join(_ROOT, "logs",   "send_queue.json")
 _HISTORY_PATH    = os.path.join(_ROOT, "logs",   "send_history.json")
+_THROTTLE_PATH   = os.path.join(_ROOT, "logs",   "last_whatsapp_send.json")
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -42,6 +43,36 @@ GHL_BASE = "https://services.leadconnectorhq.com"
 # Confirmed field IDs (GHL returns key=None on contact GET; must use IDs for reads)
 _CAO_GOOD_REPORT_FIELD_ID  = "Y1lUr9X7ACLNmfsXmsCX"
 _GOOD_REPORT_LAST_SENT_ID  = "M70Sd18pm9ZPg35ecix1"
+
+
+# ── Universal send throttle ───────────────────────────────────────────────────
+
+def _check_and_mark_throttle(caller: str) -> None:
+    """Single enforcement point for the 30-minute WhatsApp send gap.
+    Reads the last send timestamp; sleeps until DRIP_DELAY_SECONDS have elapsed.
+    Stamps the new timestamp before returning so every subsequent caller waits.
+    All send paths (scheduled, force, queue, broadcast) go through write_to_ghl()
+    which calls this — no path can bypass the gap."""
+    try:
+        elapsed = DRIP_DELAY_SECONDS + 1  # default: allow immediately
+        if os.path.exists(_THROTTLE_PATH):
+            with open(_THROTTLE_PATH, "r", encoding="utf-8") as f:
+                last_ts = float(json.load(f).get("ts", 0))
+            elapsed = time.time() - last_ts
+        if elapsed < DRIP_DELAY_SECONDS:
+            wait_sec = int(DRIP_DELAY_SECONDS - elapsed)
+            print(f"[throttle] {caller} — last send {int(elapsed)}s ago. "
+                  f"Waiting {wait_sec}s to respect 30-min gap...")
+            time.sleep(wait_sec)
+    except Exception as e:
+        print(f"[throttle] Check failed ({e}) — proceeding without wait")
+    # Stamp BEFORE returning so concurrent callers are blocked
+    try:
+        os.makedirs(os.path.dirname(_THROTTLE_PATH), exist_ok=True)
+        with open(_THROTTLE_PATH, "w", encoding="utf-8") as f:
+            json.dump({"ts": time.time(), "caller": caller}, f)
+    except Exception as e:
+        print(f"[throttle] Could not stamp send time ({e})")
 
 
 # ── History helper ────────────────────────────────────────────────────────────
@@ -651,6 +682,9 @@ def write_to_ghl(client: dict, message: str, settings: dict, message_type: str, 
     if not threeup_api_key:
         logger.info(f"[good_report] {name} — missing api_key")
         return False
+
+    # Universal 30-min throttle — enforced here so every send path is protected
+    _check_and_mark_throttle(name)
 
     headers = {
         "Authorization": f"Bearer {threeup_api_key}",

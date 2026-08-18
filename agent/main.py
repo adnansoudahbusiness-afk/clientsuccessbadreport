@@ -183,6 +183,32 @@ ALL_WEEKS = [
 ]
 
 
+def _extend_weeks():
+    """Extend ALL_WEEKS from the last entry through current week + 4 so --week N never caps."""
+    tz       = pytz.timezone("Asia/Amman")
+    now      = datetime.now(tz)
+    last     = ALL_WEEKS[-1]
+    last_end = tz.localize(datetime(*last["this_end"]))
+    nxt      = (last_end + timedelta(seconds=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    cutoff   = now + timedelta(weeks=4)
+    n        = len(ALL_WEEKS) + 1
+    while nxt <= cutoff:
+        fri      = nxt + timedelta(days=6)
+        prev_sat = nxt - timedelta(days=7)
+        prev_fri = nxt - timedelta(days=1)
+        ALL_WEEKS.append({
+            "label":      f"Week {n}",
+            "this_start": (nxt.year,      nxt.month,      nxt.day,       0,  0,  0),
+            "this_end":   (fri.year,      fri.month,      fri.day,      23, 59, 59),
+            "last_start": (prev_sat.year, prev_sat.month, prev_sat.day,  0,  0,  0),
+            "last_end":   (prev_fri.year, prev_fri.month, prev_fri.day, 23, 59, 59),
+        })
+        nxt += timedelta(weeks=1)
+        n   += 1
+
+_extend_weeks()
+
+
 def _localize_week(week_def: dict) -> tuple:
     """Convert ALL_WEEKS entry to 4 timezone-aware datetimes."""
     tz = pytz.timezone("Asia/Amman")
@@ -603,9 +629,8 @@ def week_n_mode(n: int):
     print()
 
     ghl_data_cache = {}
-    # skip_dup=False so --week reruns always re-pull even if row exists
     _pull_and_append_week(valid_clients, this_start, this_end, last_start, last_end,
-                          ghl_data_cache, skip_dup=False)
+                          ghl_data_cache, skip_dup=True)
     _start_and_watch(clients, ghl_data_cache)
 
 
