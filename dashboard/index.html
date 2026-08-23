@@ -4072,38 +4072,38 @@ function computeClientTriage(breachRows, futureRows) {
 
     // Rule A (FIRST): Tracking — patients arriving (avgNP>=10) but TL not firing
     if (hookStreak >= 4 && avgNP >= 10) {
-      hints.push({ type:'tracking', text:'Tracking issue — ' + Math.round(avgNP) + ' patients/wk arriving, trigger link not firing. Fix integration BEFORE changing strategy.' });
+      hints.push({ type:'tracking', text:'~' + Math.round(avgNP) + ' patients/wk are coming in but none are clicking the link — the trigger link may be broken in GHL. Fix this before changing strategy.' });
     }
     // Rule B: Funnel failure — Hook AND Low Volume both critical (catches Layan, Wared, Haitham)
     if (hookAlert === 'critical' && lovAlert === 'critical' && !hints.some(function(h){ return h.type==='tracking'; })) {
-      hints.push({ type:'funnel', text:'Funnel failure — few patients AND no trigger engagement' });
+      hints.push({ type:'funnel', text:'Almost no patients are coming in, and those who do aren\'t clicking the link.' });
     }
     // Rule C: Trigger never set up — Hook streak + all-zero + Low Vol NOT critical + avgNP<10
     // avgNP<10 guard: "are patients arriving?" must be tested before labelling as setup issue
     if (hookStreak >= 4 && (allHookZeroOrNA||coverageAllZero) && lovAlert !== 'critical' && avgNP < 10 && !hints.length) {
-      hints.push({ type:'setup', text:'Trigger link likely never set up in GHL — Hook uncomputable' });
+      hints.push({ type:'setup', text:'The trigger link may never have been set up in GHL — link click rates can\'t be measured.' });
     }
     // Rule Z: Zero denominator — NP=0 means Hook is 0÷0, not a healthy reading
     if (zeroDenom && !hints.length) {
-      hints.push({ type:'zero-denom', text:'Zero new patients — Hook rate is 0÷0, not "ok". Fix acquisition first.' });
+      hints.push({ type:'zero-denom', text:'No new patients this period — can\'t measure link clicks. Focus on getting patients in the door first.' });
     }
     // Rule D: Acquisition alone — Low Vol critical, Hook not critical
     if (lovAlert === 'critical' && hookAlert !== 'critical' && !hints.length) {
-      hints.push({ type:'acquisition', text:'Acquisition problem — patients not arriving' });
+      hints.push({ type:'acquisition', text:'Very few new patients are coming in.' });
     }
     // Rule E: Recovering — all streaks now 0 but had a significant past streak
     if (!hints.length) {
       var maxHistoric = Math.max.apply(null, rows.map(function(r){ return r.max_streak||0; }));
       if (totalStreak === 0 && maxHistoric >= 3)
-        hints.push({ type:'recovering', text:'Recovered — was ' + maxHistoric + 'wk streak, now clear' });
+        hints.push({ type:'recovering', text:'Back on track — was struggling for ' + maxHistoric + ' weeks, now clear.' });
     }
     // Secondary: after funnel, always surface the specific sub-cause as a 2nd hint
     // (Layan/Wared are Hook-critical AND LowVol-critical — both must be visible)
     if (hints.length === 1 && hints[0].type === 'funnel') {
       if (allHookZeroOrNA || coverageAllZero) {
-        hints.push({ type:'setup-secondary', text:'Hook 0% all weeks — verify trigger link setup in GHL' });
+        hints.push({ type:'setup-secondary', text:'Link clicks are 0% every week — verify the trigger link is active in GHL.' });
       } else if (lovAlert === 'critical') {
-        hints.push({ type:'acquisition', text:'Acquisition problem — patients not arriving' });
+        hints.push({ type:'acquisition', text:'Very few new patients are coming in.' });
       }
     }
 
@@ -4183,8 +4183,18 @@ function renderTriageView(clients) {
 
   var FLAG_ORDER = ['Hook (TL/NP)','Offer (Rev/TL)','Cancellation','Loyalty Drop','Low Volume (NP<7)'];
   var FLAG_SHORT = {
-    'Hook (TL/NP)':'Hook','Offer (Rev/TL)':'Offer',
-    'Cancellation':'Cancel','Loyalty Drop':'Loyalty','Low Volume (NP<7)':'Low Vol',
+    'Hook (TL/NP)':      'No link clicks',
+    'Offer (Rev/TL)':    'No reviews',
+    'Cancellation':      'High cancellations',
+    'Loyalty Drop':      'Loyalty dropping',
+    'Low Volume (NP<7)': 'Few patients',
+  };
+  var FLAG_WHAT_TO_DO = {
+    'Hook (TL/NP)':      'Check that staff are tagging new patients, and verify the trigger link workflow is active in GHL.',
+    'Offer (Rev/TL)':    'Check that the satisfaction/review link is working and that the message is being sent.',
+    'Cancellation':      'Call the clinic to understand why cancellations are high. A reminder workflow may help reduce no-shows.',
+    'Loyalty Drop':      'Check that patients know about the loyalty program and that points are set up correctly.',
+    'Low Volume (NP<7)': 'Talk to the clinic about patient flow — their marketing or referral sources may need attention.',
   };
 
   var TIERS = [
@@ -4223,7 +4233,7 @@ function renderTriageView(clients) {
         var r = c.flagMap[fl];
         if (!r || !(r.streak)) return;
         var pc = r.streak >= 4 ? 'pill-red' : r.streak >= 3 ? 'pill-amber' : 'pill-purple';
-        html += '<span class="pill ' + pc + '" style="font-size:.68rem">' + escHtml(FLAG_SHORT[fl]||fl) + ' ' + r.streak + 'wk</span>';
+        html += '<span class="pill ' + pc + '" style="font-size:.68rem">' + escHtml(FLAG_SHORT[fl]||fl) + ' &middot; ' + r.streak + (r.streak===1?' wk':' wks') + '</span>';
       });
       html += '</span>';
 
@@ -4289,7 +4299,7 @@ function renderTriageView(clients) {
         var isOk   = r.alert_level==='ok' && !(r.max_streak) && !c.zeroDenom;
 
         html += '<tr class="' + (isOk?'flag-row-ok':'') + '">';
-        html += '<td class="flag-name">' + escHtml(fl) + '</td>';
+        html += '<td class="flag-name">' + escHtml(FLAG_SHORT[fl] || fl) + '</td>';
         html += '<td style="background:' + aBg + ';color:' + aColor + ';font-weight:600;font-size:.68rem;white-space:nowrap">' + escHtml(aLabel) + '</td>';
         html += '<td>' + (r.streak  ? r.streak  + 'wk' : '—') + '</td>';
         html += '<td>' + (r.max_streak ? r.max_streak + 'wk' : '—') + '</td>';
@@ -4309,6 +4319,12 @@ function renderTriageView(clients) {
             var disp = (!v||v===''||v==='undefined') ? '' : String(v);
             html += '<td style="color:#1D4ED8;font-weight:600">' + (disp ? escHtml(disp) : '<span style="color:#d1d5db">—</span>') + '</td>';
           });
+          html += '</tr>';
+        }
+        // "What to do" row for active flags only
+        if (r.streak && FLAG_WHAT_TO_DO[fl]) {
+          html += '<tr style="background:#F8FAFC">';
+          html += '<td colspan="10" style="color:#374151;font-size:.72rem;padding:4px 10px 6px 18px;font-style:italic">&#x2192; ' + escHtml(FLAG_WHAT_TO_DO[fl]) + '</td>';
           html += '</tr>';
         }
       });

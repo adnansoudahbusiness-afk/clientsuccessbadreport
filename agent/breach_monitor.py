@@ -48,6 +48,11 @@ COUNTER_FID      = "nNx5vev4O2dBgLbqYNSh"
 AMMAN_TZ         = pytz.timezone("Asia/Amman")
 TAB_NAME         = "CAO Breach Monitor"
 MASTER_TAB       = "Clients Master"
+
+INACTIVITY_LOG_PATH  = _ROOT / "logs" / "inactivity_alerts.json"
+THROTTLE_PATH        = _ROOT / "logs" / "last_whatsapp_send.json"
+DRIP_DELAY           = 1800
+INACTIVITY_MIN_WEEKS = 3
 COL_STRATEGY_CHANGED = 12   # col L, 1-based (Strategy Changed On)
 COL_STRATEGY_RESET   = 13   # col M, 1-based (Strategy Reset Done)
 
@@ -650,11 +655,15 @@ def _build_report(clients: list, sheet_ids: dict, threeup_api_key: str) -> dict:
                  lv_cs, lv_wv[-lv_cs:], lv_wd[-lv_cs:])
             )
 
+        last2_raw   = data_rows[-2:] if len(data_rows) >= 2 else []
+        last2_np_tl = [(r["new_pt"], r["trigger"]) for r in last2_raw]
+
         overall_streak = _overall_current_streak(last6_curr)
         clients_out[name] = {
             "flags":               flags_out,
             "ghl_counter":         data.get("ghl_counter"),
             "data_weeks":          len(data_rows),
+            "last2_np_tl":         last2_np_tl,
             "coverage_gap":        coverage_gap,
             "current_streak":      overall_streak,
             "strategy_changed_on": sc_date.isoformat() if sc_date else None,
@@ -1013,6 +1022,108 @@ def _print_report(report: dict) -> None:
             print(f"  {'':42}  [⚙ STRATEGY RESET will also fire: GHL → 0]")
 
 
+# ── Inactivity alert helpers ──────────────────────────────────────────────────
+
+def _read_inactivity_log() -> dict:
+    try:
+        if INACTIVITY_LOG_PATH.exists():
+            return json.loads(INACTIVITY_LOG_PATH.read_text(encoding="utf-8"))
+        return {}
+    except Exception:
+        return {}
+
+
+def _write_inactivity_log(log: dict) -> None:
+    try:
+        INACTIVITY_LOG_PATH.write_text(
+            json.dumps(log, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+    except Exception as e:
+        print(f"[breach] inactivity log write error: {e}")
+
+
+def _throttle_wait_and_record() -> None:
+    try:
+        elapsed = DRIP_DELAY + 1
+        if THROTTLE_PATH.exists():
+            raw = json.loads(THROTTLE_PATH.read_text(encoding="utf-8"))
+            elapsed = time.time() - float(raw.get("ts", 0))
+        if elapsed < DRIP_DELAY:
+            wait = DRIP_DELAY - elapsed
+            print(f"[breach] throttle: waiting {int(wait)}s...")
+            time.sleep(wait)
+        THROTTLE_PATH.write_text(json.dumps({"ts": time.time()}), encoding="utf-8")
+    except Exception as e:
+        print(f"[breach] throttle error: {e}")
+
+
+def _send_inactivity_alerts(report: dict, clients: list, settings: dict) -> None:
+    from ghl_client import get_has_recent_ghl_activity
+    threeup_api_key = settings.get("threeup_api_key", "")
+    if not threeup_api_key:
+        print("[breach] inactivity check: no threeup_api_key — skipping")
+        return
+    client_map  = {c["name"]: c for c in clients}
+    log         = _read_inactivity_log()
+    run_date    = datetime.now(AMMAN_TZ).strftime("%Y-%m-%d")
+    alerts_sent = 0
+
+    for name, cdata in sorted(report["clients"].items()):
+        if cdata.get("data_weeks", 0) < INACTIVITY_MIN_WEEKS:
+            continue
+        last2 = cdata.get("last2_np_tl", [])
+        if len(last2) < 2:
+            continue
+        client_active = any(np > 0 or tl > 0 for np, tl in last2)
+        if client_active:
+            if log.get(name, {}).get("currently_inactive"):
+                log[name]["currently_inactive"] = False
+                print(f"[breach] inactivity: {name} — recovered, flag reset")
+            continue
+        if log.get(name, {}).get("currently_inactive"):
+            print(f"[breach] inactivity: {name} — NP=TL=0 but already alerted this spell, skipping")
+            continue
+        c = client_map.get(name, {})
+        api_key     = c.get("ghl_api_key", "")
+        location_id = c.get("location_id", "")
+        if not api_key or not location_id:
+            print(f"[breach] inactivity: {name} — no api_key/location_id, skipping")
+            continue
+        has_ghl_activity = get_has_recent_ghl_activity(
+            api_key, location_id, window_days=14, client_name=name
+        )
+        if has_ghl_activity:
+            print(
+                f"[breach] inactivity: {name} — NP=TL=0 but GHL has activity"
+                f" → likely setup issue, not abandonment"
+            )
+            continue
+        cid = c.get("contact_id", "")
+        if not cid or cid in _KNOWN_400_CONTACT_IDS:
+            print(f"[breach] inactivity: {name} — no contact_id, skipping")
+            continue
+        note_text = (
+            f"\U0001f6d1 INACTIVE — {name}: 0 new patients tagged and 0 trigger link clicks "
+            f"for 2 consecutive weeks, with no other GHL activity detected. "
+            f"The clinic may have stopped using the system. ({run_date})"
+        )
+        _throttle_wait_and_record()
+        ok = _ghl_add_note(threeup_api_key, cid, note_text)
+        if ok:
+            if name not in log:
+                log[name] = {}
+            log[name]["last_alert_date"]    = run_date
+            log[name]["currently_inactive"] = True
+            alerts_sent += 1
+            print(f"[breach] inactivity ⚠ ALERT: {name} → note sent ✅")
+        else:
+            print(f"[breach] inactivity ⚠ ALERT: {name} → note FAILED")
+        time.sleep(0.5)
+
+    _write_inactivity_log(log)
+    print(f"[breach] inactivity check done: {alerts_sent} alert(s) sent this run")
+
+
 # ── Public entry point ────────────────────────────────────────────────────────
 
 def run(clients: list, settings: dict, dry_run: bool = False) -> dict:
@@ -1060,49 +1171,29 @@ def run(clients: list, settings: dict, dry_run: bool = False) -> dict:
 
     write_breach_to_sheet(report)
 
-    # ── GHL counter + note (atomic pair) ─────────────────────────────────────
-    # Field write and note add MUST happen together. Note triggers the GHL
-    # workflow; without it, the counter changes silently with no automation.
+    # ── GHL counter field write (field only — no note, no workflow trigger) ────
     contact_map = {c["name"]: c.get("contact_id", "") for c in non_churned}
     ghl_errors  = {}
-    ghl_ok = ghl_note_fail = ghl_field_fail = 0
+    ghl_ok = ghl_field_fail = 0
 
     for name, cdata in sorted(report["clients"].items()):
         cid = contact_map.get(name, "")
         if not cid or cid in _KNOWN_400_CONTACT_IDS:
             continue
-        streak    = cdata.get("current_streak", 0)
-        written   = min(streak, 4)
-        note_body = _breach_note_body(written, streak)
+        streak  = cdata.get("current_streak", 0)
+        written = min(streak, 4)
 
         ok_field = _ghl_write_counter(threeup_api_key, cid, written)
         if not ok_field:
             ghl_field_fail += 1
             ghl_errors[name] = f"GHL field write FAILED (contact: {cid}, value: {written})"
             logger.error(f"[breach] !! FIELD WRITE FAILED — {name} ({cid})")
-            time.sleep(0.10)
-            continue
-
-        ok_note = _ghl_add_note(threeup_api_key, cid, note_body)
-        if not ok_note:
-            ghl_note_fail += 1
-            ghl_errors[name] = (
-                f"field written (={written}) but note POST FAILED"
-                f" — workflow did NOT fire (contact: {cid})"
-            )
-            logger.error(
-                f"[breach] !! NOTE POST FAILED — {name} counter={written}"
-                f" written but workflow NOT triggered ({cid})"
-            )
         else:
             ghl_ok += 1
         time.sleep(0.10)
 
     report["ghl_errors"] = ghl_errors
-    print(
-        f"[breach] GHL sync: {ghl_ok} ok  ·  "
-        f"{ghl_note_fail} note-fail  ·  {ghl_field_fail} field-fail"
-    )
+    print(f"[breach] GHL counter writes: {ghl_ok} ok  ·  {ghl_field_fail} failed")
     if ghl_errors:
         print(f"[breach] !! {len(ghl_errors)} GHL failure(s) — check email for details")
 
@@ -1117,19 +1208,19 @@ def run(clients: list, settings: dict, dry_run: bool = False) -> dict:
         if not cid or cid in _KNOWN_400_CONTACT_IDS:
             logger.warning(f"[breach] strategy reset skipped: {name} — no contact_id")
             continue
-        sc_date_str = cdata.get("strategy_changed_on", "")
-        note_body   = f"CAO Breach Monitor — strategy change {sc_date_str}: GHL counter reset to 0"
         ok_field = _ghl_write_counter(threeup_api_key, cid, 0)
-        ok_note  = _ghl_add_note(threeup_api_key, cid, note_body) if ok_field else False
         if ok_field:
+            sc_date_str = cdata.get("strategy_changed_on", "")
             row = cdata.get("sc_sheet_row")
             if row:
                 reset_writes.append((row, sc_date_str))
-            print(f"[breach] Strategy reset: {name} GHL→0  {'+ note ok' if ok_note else '!! note failed'}")
+            print(f"[breach] Strategy reset: {name} GHL→0")
         else:
             print(f"[breach] !! Strategy reset field failed: {name}")
         time.sleep(0.10)
     _write_strategy_reset_done(reset_writes)
+
+    _send_inactivity_alerts(report, non_churned, settings)
 
     from system_health import health_block, record_run
     record_run("breach_monitor")
