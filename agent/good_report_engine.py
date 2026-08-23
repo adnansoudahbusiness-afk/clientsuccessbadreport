@@ -24,7 +24,7 @@ from notifier_email import send_email
 logger = logging.getLogger("good_report_engine")
 
 AM_DATES_SHEET_ID  = "12KEc1_CIkAHpfA74y660zsWSGnkbcSoltcSosuk4smA"
-DRIP_DELAY_SECONDS = 1800
+DRIP_DELAY_SECONDS = 600
 
 _HERE            = os.path.dirname(os.path.abspath(__file__))
 _ROOT            = os.path.dirname(_HERE)
@@ -62,7 +62,7 @@ def _check_and_mark_throttle(caller: str) -> None:
         if elapsed < DRIP_DELAY_SECONDS:
             wait_sec = int(DRIP_DELAY_SECONDS - elapsed)
             print(f"[throttle] {caller} — last send {int(elapsed)}s ago. "
-                  f"Waiting {wait_sec}s to respect 30-min gap...")
+                  f"Waiting {wait_sec}s to respect 10-min gap...")
             time.sleep(wait_sec)
     except Exception as e:
         print(f"[throttle] Check failed ({e}) — proceeding without wait")
@@ -442,15 +442,14 @@ def get_client_performance(client_name: str, all_rows: list, message_type: str):
     if not all_rows:
         return None
 
+    confirmed_rows = [r for r in all_rows if _is_confirmed_row(r)]
+    if not confirmed_rows:
+        return None
+
     if message_type == "sustainability":
-        confirmed_rows = [r for r in all_rows if _is_confirmed_row(r)]
-        if not confirmed_rows:
-            return None
         rows = confirmed_rows[-2:]
-    else:
-        rows = [r for r in all_rows if _is_confirmed_row(r)]
-        if not rows:
-            return None
+    else:  # renewal — last 4 weeks
+        rows = confirmed_rows[-4:]
 
     most_recent = rows[-1]
 
@@ -461,7 +460,7 @@ def get_client_performance(client_name: str, all_rows: list, message_type: str):
             v = row[idx]
             if v in ("", None):
                 return default
-            return float(str(v).replace("%", "").strip())
+            return float(str(v).replace("%", "").replace(",", "").strip())
         except (ValueError, TypeError):
             return default
 
@@ -471,6 +470,14 @@ def get_client_performance(client_name: str, all_rows: list, message_type: str):
     new_patients_pct = _safe(most_recent, 5)
     cancellation_rate = _safe(most_recent, 15)
     website_patients = sum(_safe(r, 31) for r in rows)
+
+    # Attendance: confirmed ÷ booked across the window (renewal only; also available for sus)
+    total_booked    = sum(_safe(r, 12) for r in rows)
+    total_confirmed = sum(_safe(r, 13) for r in rows)
+    if total_booked > 0:
+        attendance_pct = round(total_confirmed / total_booked * 100, 1)
+    else:
+        attendance_pct = None
 
     hook_flagged   = (str(most_recent[10]).strip().upper() == "TRUE"
                       if len(most_recent) > 10 else False)
@@ -489,6 +496,9 @@ def get_client_performance(client_name: str, all_rows: list, message_type: str):
         "new_patients_pct":  new_patients_pct,
         "cancellation_rate": cancellation_rate,
         "website_patients":  website_patients,
+        "total_booked":      total_booked,
+        "total_confirmed":   total_confirmed,
+        "attendance_pct":    attendance_pct,
         "hook_flagged":      hook_flagged,
         "offer_flagged":     offer_flagged,
         "cancel_flagged":    cancel_flagged,
@@ -499,6 +509,59 @@ def get_client_performance(client_name: str, all_rows: list, message_type: str):
 
 # ── FUNCTION 5: generate_message ─────────────────────────────────────────────
 
+def _generate_renewal_message(
+    doctor_name: str,
+    performance: dict,
+    payment_date_str: str,
+) -> str:
+    """New renewal template. doctor_name already carries title (دكتور/دكتورة)."""
+    np_  = int(performance["new_patients"])
+    nr   = int(performance["new_reviews"])
+    att  = performance.get("attendance_pct")
+    wp   = int(performance.get("website_patients", 0))
+
+    metric_lines = []
+    if np_ > 0:
+        metric_lines.append(f"📈 {np_} مريض جديد")
+    if nr > 0:
+        metric_lines.append(f"⭐ {nr} تقييم إيجابي جديد على Google")
+    if att is not None:
+        metric_lines.append(f"📅 نسبة حضور {att}% للمواعيد")
+    if wp > 0:
+        metric_lines.append(f"🌐 {wp} مريض وصلكم عبر الموقع الإلكتروني")
+
+    metrics_block = "\n".join(metric_lines)
+
+    return (
+        f"السلام عليكم {doctor_name} 🌹\n"
+        f"نتمنى أن تكونوا بأفضل حال.\n"
+        f"قبل أي شيء، حبينا نشارككم نتائج عيادتكم خلال الفترة الماضية:\n"
+        f"{metrics_block}\n"
+        f"📊 تحسّن مستمر في ترتيب العيادة على Google شهراً بعد شهر\n"
+        f"هذه النتائج تحققت بفضل ثقتكم واستمرارية العمل معاً، ونحن\n"
+        f"ملتزمون بمواصلة تطويرها.\n"
+        f"🎯 ما نعمل عليه في الفترة القادمة:\n"
+        f"- الاستمرار في زيادة تقييمات Google ورفع ترتيب العيادة\n"
+        f"- تطوير المحتوى الرقمي وتحسين ظهوركم أمام المرضى\n"
+        f"- العمل على تعزيز حضوركم في نتائج الذكاء الاصطناعي\n"
+        f"  (ChatGPT و Gemini) , حيث بدأ عدد كبير من المرضى\n"
+        f"  يعتمد عليها للبحث عن العيادات\n"
+        f"- و اضافة نظام المحاسبة و ملفات المرضى\n"
+        f"💳 تجديد الاشتراك:\n"
+        f"اشتراك هذا الشهر مستحق بتاريخ {payment_date_str}.\n"
+        f"نكون شاكرين لكم في حال التكرم بإتمام الدفع قبل هذا التاريخ،\n"
+        f"حتى نضمن استمرار جميع الحملات والتطويرات دون أي انقطاع ,\n"
+        f"لأن أي توقف يؤثر مباشرة على الزخم الذي بنيناه معاً.\n"
+        f"للدفع أو لأي استفسار، نحن بانتظاركم في أي وقت 🌿\n"
+        f"كليك: 00962796876276 عدنان حنا (بنك الاتحاد)\n"
+        f"أو\n"
+        f"كليك: 00962796244100 حمزة شريم (بنك الاتحاد)\n"
+        f"في حال كاش, الرجاء التواصل معنا.\n"
+        f"شكراً لثقتكم الغالية،\n"
+        f"فريق ThreeUp"
+    )
+
+
 def generate_message(
     doctor_name: str,
     performance: dict,
@@ -508,6 +571,9 @@ def generate_message(
     payment_date_str: str = "",
 ) -> str:
     """Build the Arabic good-report message based on performance tone."""
+    if message_type == "renewal":
+        return _generate_renewal_message(doctor_name, performance, payment_date_str)
+
     nr = int(performance["new_reviews"])
     tr = int(performance["total_reviews"])
     np_ = int(performance["new_patients"])
@@ -893,6 +959,13 @@ def process_queue(clients: list, settings: dict) -> tuple:
             remain.append(client_name)
             continue
 
+        if msg_type == "renewal":
+            _np = int(performance.get("new_patients", 0))
+            _nr = int(performance.get("new_reviews",  0))
+            if _np == 0 and _nr == 0:
+                print(f"[queue] {name} — SKIPPED (renewal: 0 patients + 0 reviews — handle manually)")
+                continue  # remove from queue silently (no data = no message needed)
+
         message = generate_message(
             doctor_name, performance, msg_type,
             satisfaction_link, renewal_date_str, payment_date_str,
@@ -918,7 +991,7 @@ def process_queue(clients: list, settings: dict) -> tuple:
             remain.append(client_name)
 
         if i < len(queue) - 1:
-            print(f"[queue] Waiting 30 minutes before next queued send...")
+            print(f"[queue] Waiting 10 minutes before next queued send...")
             time.sleep(DRIP_DELAY_SECONDS)
 
     try:
@@ -981,6 +1054,20 @@ def run(clients: list, settings: dict) -> None:
         print("[good_report] No good reports due today")
 
     print(f"[good_report] {len(due)} message(s) due today")
+
+    # ── Print send timetable ──────────────────────────────────────────────────
+    if due:
+        _now_amman   = datetime.now(pytz.timezone("Asia/Amman"))
+        _plan_start  = _now_amman.replace(hour=9, minute=0, second=0, microsecond=0)
+        if _now_amman >= _plan_start:
+            _plan_start = _now_amman
+        print(f"\n[good_report] SEND PLAN — 10-min spacing from {_plan_start.strftime('%H:%M')} Amman:")
+        for _idx, _entry in enumerate(due):
+            _fire = _plan_start + timedelta(seconds=DRIP_DELAY_SECONDS * _idx)
+            _tag  = "  [missed]" if _entry.get("is_missed") else ""
+            print(f"  {_idx+1:2d}.  {_fire.strftime('%H:%M')}  "
+                  f"{_entry['client_name']:<40}  ({_entry['message_type']}, due={_entry['due_date']}){_tag}")
+        print()
 
     threeup_api_key   = settings.get("threeup_api_key", "")
     satisfaction_link = settings.get("satisfaction_link", "")
@@ -1114,6 +1201,27 @@ def run(clients: list, settings: dict) -> None:
             })
             continue
 
+        # Renewal skip rule: 0 new patients AND 0 reviews → handle manually
+        if message_type == "renewal":
+            _np = int(performance.get("new_patients", 0))
+            _nr = int(performance.get("new_reviews",  0))
+            if _np == 0 and _nr == 0:
+                print(f"[good_report] {name} — SKIPPED renewal (0 patients + 0 reviews in last 4 wks — handle manually)")
+                skip_count += 1
+                skip_list.append(f"{name} (renewal: 0 patients + 0 reviews — handle manually)")
+                _append_history({
+                    "scheduled_date": due_date_str,
+                    "actual_date":    None,
+                    "client":         name,
+                    "am_name":        am_name,
+                    "contact_id":     contact_id,
+                    "type":           message_type,
+                    "status":         "skipped_zero_metrics",
+                    "triggered_by":   "scheduled",
+                    "reason":         "renewal_0_patients_0_reviews",
+                })
+                continue
+
         message = generate_message(
             doctor_name, performance, message_type,
             satisfaction_link, renewal_date_str, payment_date_str,
@@ -1151,7 +1259,7 @@ def run(clients: list, settings: dict) -> None:
             })
 
         if i < len(due) - 1:
-            print(f"[good_report] Waiting 30 minutes before next message...")
+            print(f"[good_report] Waiting 10 minutes before next message...")
             time.sleep(DRIP_DELAY_SECONDS)
 
     print(f"[good_report] Done — {sent_count} sent, {skip_count} skipped, {error_count} errors")
@@ -1303,6 +1411,13 @@ def run_force(clients: list, settings: dict, client_name: str, defer: bool = Fal
     if not performance:
         print(f"[good_report_force] No performance data for {name}")
         return
+
+    if msg_type == "renewal":
+        _np = int(performance.get("new_patients", 0))
+        _nr = int(performance.get("new_reviews",  0))
+        if _np == 0 and _nr == 0:
+            print(f"[good_report_force] {name} — SKIPPED (renewal: 0 patients + 0 reviews in last 4 wks)")
+            return
 
     message = generate_message(
         doctor_name, performance, msg_type,
