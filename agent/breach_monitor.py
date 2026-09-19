@@ -1146,7 +1146,7 @@ def run(clients: list, settings: dict, dry_run: bool = False) -> dict:
         print(f"[breach] Cannot load sheet_ids.json: {e}")
         return {}
 
-    non_churned = [c for c in clients if not c.get("churned")]
+    non_churned = [c for c in clients if not c.get("churned") and not c.get("not_onboarded")]
     print(f"[breach] Starting breach audit — {len(non_churned)} non-churned clients")
 
     report = _build_report(non_churned, sheet_ids, threeup_api_key)
