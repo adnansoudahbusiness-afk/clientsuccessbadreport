@@ -532,7 +532,9 @@
     "phone": "+9627 9735 0349",
     "new_patient_tag": "مريض اليوم",
     "trigger_link_tag": "trigger link clicked",
-    "cadence_anchor": "2026-09-05"
+    "cadence_anchor": "2026-09-05",
+    "sends_disabled": true,
+    "not_onboarded": true
   },
   {
     "name": "Dr Mahmoud Malkawi",

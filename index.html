@@ -1374,14 +1374,14 @@ const CONFIG = {
     {name:"Luxury Wellness",                         contact_id:"bu6j2kXbybHwHupIyuOa", sheet_id:"12QZ4hDIMdFPvZXSsXPc8hRlU9Vf4SgWFQYzQ30Kwu6w"},
     {name:"Dr Mohammad Al-Khalili",                  contact_id:"Ckw6BxmlYtEXDCnudDx3", sheet_id:"1MtiP_OfCz7q1bQzDRwseu1KCQKl_anLaYu27DLuqlF0"},
     {name:"Dr Yahya Alaydeh",                        contact_id:"rHDseGUrandm4mAHrqzo", sheet_id:"1HsZ4jVTpHyleStWIPs7jSIv_vOtMuKDTNLiiiaM2ABQ", churned:true},
-    {name:"Dr Amjad Daas",                           contact_id:"8knnVxuxkpqatQDvkgFU", sheet_id:"1-h8v4S2vqlWJKU5O6a2ZPM6QkPx2SIk6ZluImexnfPs"},
+    {name:"Dr Amjad Daas",                           contact_id:"8knnVxuxkpqatQDvkgFU", sheet_id:"1-h8v4S2vqlWJKU5O6a2ZPM6QkPx2SIk6ZluImexnfPs", sends_disabled:true},
     {name:"Dr Samer Ghunaim",                        contact_id:"6EYkewXT63S7OIsXZ7y8", sheet_id:"1Y4Z8gKGK9Ud7clO6lMo1qIImtfQ0kbsAOiejJ1nqtI8"},
-    {name:"Dr Noor Hakam",                           contact_id:"YVNGQzCViptdYJOEP1jm", sheet_id:"1DUSIvbifJZjJQiOa5cGp26c3-KDZd8H8q5pvsfjqXvg"},
+    {name:"Dr Noor Hakam",                           contact_id:"YVNGQzCViptdYJOEP1jm", sheet_id:"1DUSIvbifJZjJQiOa5cGp26c3-KDZd8H8q5pvsfjqXvg", sends_disabled:true},
     {name:"Dr Basil Obeidat",                        contact_id:"Dm9oCQWERwzGKkTXL7di", sheet_id:"1UCUXrdOdVMQXzFXddjrRojCNdyl62t7spgp2r7aVg-s"},
-    {name:"Dr Farah Sweiss",                         contact_id:"xbC1ryqpeptJ0NXhv2vk", sheet_id:"1xbRGeKYCzuFkSAIHoAq6n0ZBQE9trpiG7kgFONBf8OM"},
+    {name:"Dr Farah Sweiss",                         contact_id:"xbC1ryqpeptJ0NXhv2vk", sheet_id:"1xbRGeKYCzuFkSAIHoAq6n0ZBQE9trpiG7kgFONBf8OM", sends_disabled:true},
     {name:"Dr Mahmoud Malkawi",                      contact_id:"xUSuyCNv6YelkqJzPVuB", sheet_id:"1ueHCwpVmYovfcYvJ99TOhJsPCzZz30Y-BGw8uW9QQsU"},
     {name:"Dr Hisham Qaisi",                         contact_id:"eJaHAibEzZXLnyWiK87L", sheet_id:"1EbgeOOhSXL5EhySYkilPOzui3y0ZeCdeYXanw_wm8oM"},
-    {name:"Dr Shadi Al Khateeb",                     contact_id:"N11EIFC2Zn60bL3LZP51", sheet_id:"1C95su5NL2uk8EOrQHlNy6C0Jx4gONLCa7beUFbTzYSc"},
+    {name:"Dr Shadi Al Khateeb",                     contact_id:"N11EIFC2Zn60bL3LZP51", sheet_id:"1C95su5NL2uk8EOrQHlNy6C0Jx4gONLCa7beUFbTzYSc", sends_disabled:true},
     {name:"Dr Shadi AlHourani",                      contact_id:"DNckGHyyucpzZbfqg93p", sheet_id:"1GZbc1XBC8jqQBvUl2AOet1U8iK5ghUncU9hV3zUcRN4"}
   ],
   // Client portal credentials
@@ -1707,9 +1707,12 @@ function initTab1() {
     if (client.churned) return;
     _rowNum++;
     const tr = document.createElement('tr');
+    const _sdBadge = client.sends_disabled
+      ? ' <span style="font-size:10px;font-weight:600;color:#f59e0b;background:rgba(245,158,11,0.13);padding:1px 6px;border-radius:4px;white-space:nowrap">Sends Off</span>'
+      : '';
     tr.innerHTML =
       '<td class="num">' + _rowNum + '</td>' +
-      '<td>' + escHtml(client.name) + '</td>' +
+      '<td>' + escHtml(client.name) + _sdBadge + '</td>' +
       '<td><input type="number" class="review-input" id="rev-' + i + '" min="0" placeholder="" /></td>' +
       '<td><input type="number" class="review-input" id="wp-' + i + '" min="0" placeholder="" /></td>' +
       '<td class="status-cell" id="rev-status-' + i + '"></td>';
@@ -2065,9 +2068,9 @@ async function loadClientStatus() {
       }
 
       var lastRevs = rows.length >= 2 ? ((parseFloat(rows[rows.length-1][1])||0) - (parseFloat(rows[rows.length-2][1])||0)) : null;
-      return { name: client.name, rows: rows, counter: counterVal, strike: strikeCount, trend: lastRevs, ok: true };
+      return { name: client.name, sends_disabled: !!client.sends_disabled, rows: rows, counter: counterVal, strike: strikeCount, trend: lastRevs, ok: true };
     } catch(e) {
-      return { name: client.name, rows: [], counter: 0, strike: 0, trend: null, ok: false };
+      return { name: client.name, sends_disabled: !!client.sends_disabled, rows: [], counter: 0, strike: 0, trend: null, ok: false };
     }
   }));
 
@@ -2162,7 +2165,10 @@ function renderStatusTable() {
                     : r.trend < 0      ? '<span style="color:var(--red)">\u2193 ' + r.trend + '</span>'
                     :                    '<span style="color:var(--muted)">\u2192 0</span>';
     tbody += '<tr style="' + strikeBg + '">';
-    tbody += '<td style="font-weight:600">' + escHtml(r.name) + '</td>';
+    var _sdTag = r.sends_disabled
+      ? ' <span style="font-size:10px;font-weight:600;color:#f59e0b;background:rgba(245,158,11,0.13);padding:1px 6px;border-radius:4px;white-space:nowrap">Sends Off</span>'
+      : '';
+    tbody += '<td style="font-weight:600">' + escHtml(r.name) + _sdTag + '</td>';
     tbody += '<td style="text-align:center;color:' + strikeColor + ';font-weight:700">' + strikeEmoji + ' ' + r.strike + '</td>';
     tbody += '<td style="text-align:center">' + trendCell + '</td>';
     showWeeks.forEach(function(wl) {
